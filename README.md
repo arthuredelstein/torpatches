@@ -8,6 +8,6 @@ lein run
 
 ## License
 
-Arthur Edelstein,20155
+Arthur Edelstein, 2015
 
 This software and source code is public domain.
