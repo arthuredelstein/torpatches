@@ -1,5 +1,6 @@
 (ns torpatches.core
   (:require [clojure.java.shell :as shell]
+            [clojure.string :as string]
             [hiccup.page :as page]))
 
 (defn shell-lines
@@ -10,8 +11,8 @@
               (concat (clojure.string/split line #" ")
                       etc))
        :out
-       clojure.string/split-lines
-       (map clojure.string/trim)))
+       string/split-lines
+       (map string/trim)))
 
 (defn branches
   "List names of git branches."
@@ -34,7 +35,7 @@
     (->> (shell-lines (str "git log --oneline "
                            branch "~" n ".." branch)
                       :dir "../tor-browser")
-         (map #(clojure.string/split % #"\s" 2)))))
+         (map #(string/split % #"\s" 2)))))
 
 (defn match
   "Use a regular expression to find the first matching
@@ -110,7 +111,7 @@
    (str "../../torpat.ch/" ticket)
    (let [title (str "Patches for Tor Browser Bug #" ticket)]
      (page/html5
-      [:head [:title title]]
+      [:head [:title title] [:meta {:charset "utf-8"}]]
       [:body
        [:h3 title]
        [:pre
@@ -119,15 +120,17 @@
            [:li hash " " [:a {:href (patch-url hash)} message]])]]]))))
 
 (defn write-index
+  "Write an index.html file that is visible at https://torpat.ch .
+   Shows time of last update."
   []
   (spit
    "../../torpat.ch/index.html"
    (page/html5
-    [:head [:title "torpat.ch"]]
+    [:head [:title "torpat.ch"] [:meta {:charset "utf-8"}]]
     [:body
      [:h3 "torpat.ch"]
-     [:p "Last update: " (.toString (java.util.Date.))]]
-     [:p [:a {:href "https://github.com/arthuredelstein/torpatches"} "Source on github"]])))
+     [:p "Last update: " (.toString (java.util.Date.))]
+     [:p [:a {:href "https://github.com/arthuredelstein/torpatches"} "Source on github"]]])))
 
 (defn -main [& args]
   "The main program. Works out the Tor Browser trac ticket number for each
