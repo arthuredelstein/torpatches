@@ -140,4 +140,4 @@
     (dorun (map write-indirect-page multi-patch-bugs))
     (println "Wrote multipatch link files.")
     (write-index)
-    (println "Wote index."))
+    (println "rWote index."))
