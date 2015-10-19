@@ -126,7 +126,8 @@
     [:head [:title "torpat.ch"]]
     [:body
      [:h3 "torpat.ch"]
-     [:p "Last update: " (.toString (java.util.Date.))]])))
+     [:p "Last update: " (.toString (java.util.Date.))]]
+     [:p [:a {:href "https://github.com/arthuredelstein/torpatches"} "Source on github"]])))
 
 (defn -main [& args]
   "The main program. Works out the Tor Browser trac ticket number for each
@@ -140,4 +141,4 @@
     (dorun (map write-indirect-page multi-patch-bugs))
     (println "Wrote multipatch link files.")
     (write-index)
-    (println "rWote index."))
+    (println "Wrote index.")))
