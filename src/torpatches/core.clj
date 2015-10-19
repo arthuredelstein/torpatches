@@ -118,6 +118,16 @@
          (for [[hash message] commits]
            [:li hash " " [:a {:href (patch-url hash)} message]])]]]))))
 
+(defn write-index
+  []
+  (spit
+   "../../torpat.ch/index.html"
+   (page/html5
+    [:head [:title "torpat.ch"]]
+    [:body
+     [:h3 "torpat.ch"]
+     [:p "Last update: " (.toString (java.util.Date.))]])))
+
 (defn -main [& args]
   "The main program. Works out the Tor Browser trac ticket number for each
    patch. For bugs with a single patch, generates a redirect from
@@ -126,4 +136,8 @@
    creates a page at https://torpat.ch/#### that links to each of those patches."
   (let [[single-patch-bugs multi-patch-bugs] (singles-and-multiples (bugs-map))]
     (write-redirect-file single-patch-bugs)
-    (dorun (map write-indirect-page multi-patch-bugs))))
+    (println "Wrote redirects file.")
+    (dorun (map write-indirect-page multi-patch-bugs))
+    (println "Wrote multipatch link files.")
+    (write-index)
+    (println "Wote index."))
