@@ -123,15 +123,19 @@
   "Write an index.html file that is visible at https://torpat.ch .
    Shows time of last update."
   []
-  (spit
-   "../../torpat.ch/index.html"
-   (page/html5
-    [:head [:title "torpat.ch"] [:meta {:charset "utf-8"}]]
-    [:body
-     [:h3 "torpat.ch"]
-     [:p "Last update: " (.toString (java.util.Date.))]
-     [:p [:a {:href "https://github.com/arthuredelstein/torpatches"}
-          "Source on github"]]])))
+  (let [branch (last (.split (newest-tor-browser-branch) "/"))]
+    (spit
+     "../../torpat.ch/index.html"
+     (page/html5
+      [:head [:title "torpat.ch"] [:meta {:charset "utf-8"}]]
+      [:body
+       [:h3 "torpat.ch"]
+       [:p "Last update: " (.toString (java.util.Date.))]
+       [:p "Current tor-browser.git branch: "
+        [:a {:href (str "https://gitweb.torproject.org/tor-browser.git/log/?h="
+                        branch)} branch]]
+        [:p [:a {:href "https://github.com/arthuredelstein/torpatches"}
+             "Source on github"]]]))))
 
 (defn -main [& args]
   "The main program. Works out the Tor Browser trac ticket number for each
