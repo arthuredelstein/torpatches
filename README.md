@@ -1,14 +1,13 @@
 # torpatches
 
-A Clojure library designed to ... well, that part is up to you.
+A Clojure script for generating torpat.ch redirects and link pages.
 
 ## Usage
 
-FIXME
+lein run
 
 ## License
 
-Copyright © 2015 FIXME
+Arthur Edelstein,20155
 
-Distributed under the Eclipse Public License either version 1.0 or (at
-your option) any later version.
+This software and source code is public domain.
