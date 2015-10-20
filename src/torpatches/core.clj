@@ -152,5 +152,5 @@
     (println "Wrote redirects file.")
     (dorun (map write-indirect-page multi-patch-bugs))
     (println "Wrote multipatch link files.")
-    (write-index branch)
+    (write-index (last (.split branch "/")))
     (println "Wrote index.")))
