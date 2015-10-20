@@ -1,4 +1,8 @@
 (ns torpatches.core
+  "Program to generate the torpat.ch website. URLs like
+   https://torpat.ch/5856 redirect or link to diff(s) on
+   https://gitweb.torproject.org/ ."
+  {:author "Arthur Edelstein"}
   (:require [clojure.java.shell :as shell]
             [clojure.string :as string]
             [hiccup.page :as page]))
@@ -19,7 +23,7 @@
   [dir]
   (shell-lines "git branch -a" :dir dir))
 
-(defn newest-tor-browser-branch []
+(defn newest-tor-browser-branch
   "Get the name of the most recent Tor Browser branch.
    Assumes branches are named by semantic versioning."
   []
@@ -27,15 +31,14 @@
        (filter #(.startsWith % "remotes/origin/tor-browser-"))
        sort reverse first))
 
-(defn latest-commits [n]
-  "Get the latest n patches."
-  []
+(defn latest-commits
+  "Get the latest n patches for the given branch."
+  [branch n]
   (shell-lines "git fetch origin" :dir "../tor-browser")
-  (let [branch (newest-tor-browser-branch)]
-    (->> (shell-lines (str "git log --oneline "
-                           branch "~" n ".." branch)
-                      :dir "../tor-browser")
-         (map #(string/split % #"\s" 2)))))
+  (->> (shell-lines (str "git log --oneline "
+                         branch "~" n ".." branch)
+                    :dir "../tor-browser")
+       (map #(string/split % #"\s" 2))))
 
 (defn match
   "Use a regular expression to find the first matching
@@ -60,12 +63,12 @@
   [commits]
   (remove #(let [[hash msg] %] (.contains msg "r=")) commits))
 
-(defn bugs-map
-  "A map of trac.torproject.org ticket numbers to
+(defn read-bugs-map
+  "Retrieve a map of trac.torproject.org ticket numbers to
    a vector of [commit-hash commit-message]."
-  []
+  [branch]
   (->
-   (->> (latest-commits 200)
+   (->> (latest-commits branch 200)
         remove-mozilla-commits
         (group-by #(-> % second bug-number)))
    (dissoc nil)))
@@ -122,20 +125,19 @@
 (defn write-index
   "Write an index.html file that is visible at https://torpat.ch .
    Shows time of last update."
-  []
-  (let [branch (last (.split (newest-tor-browser-branch) "/"))]
-    (spit
-     "../../torpat.ch/index.html"
-     (page/html5
-      [:head [:title "torpat.ch"] [:meta {:charset "utf-8"}]]
-      [:body
-       [:h3 "torpat.ch"]
-       [:p "Last update: " (.toString (java.util.Date.))]
-       [:p "Current tor-browser.git branch: "
-        [:a {:href (str "https://gitweb.torproject.org/tor-browser.git/log/?h="
-                        branch)} branch]]
-        [:p [:a {:href "https://github.com/arthuredelstein/torpatches"}
-             "Source on github"]]]))))
+  [branch]
+  (spit
+   "../../torpat.ch/index.html"
+   (page/html5
+    [:head [:title "torpat.ch"] [:meta {:charset "utf-8"}]]
+    [:body
+     [:h3 "torpat.ch"]
+     [:p "Last update: " (.toString (java.util.Date.))]
+     [:p "Current tor-browser.git branch: "
+      [:a {:href (str "https://gitweb.torproject.org/tor-browser.git/log/?h="
+                      branch)} branch]]
+     [:p [:a {:href "https://github.com/arthuredelstein/torpatches"}
+          "Source on github"]]])))
 
 (defn -main [& args]
   "The main program. Works out the Tor Browser trac ticket number for each
@@ -143,10 +145,12 @@
    https://torpat.ch/#### (where #### is the ticker number) to the patch at
    https://gitweb.torproject.org. For bugs with multiple patches,
    creates a page at https://torpat.ch/#### that links to each of those patches."
-  (let [[single-patch-bugs multi-patch-bugs] (singles-and-multiples (bugs-map))]
+  (let [branch (newest-tor-browser-branch)
+        bugs-map (read-bugs-map branch)
+        [single-patch-bugs multi-patch-bugs] (singles-and-multiples bugs-map)]
     (write-redirect-file single-patch-bugs)
     (println "Wrote redirects file.")
     (dorun (map write-indirect-page multi-patch-bugs))
     (println "Wrote multipatch link files.")
-    (write-index)
+    (write-index branch)
     (println "Wrote index.")))
