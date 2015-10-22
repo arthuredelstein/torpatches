@@ -122,7 +122,7 @@
          (for [[hash message] commits]
            [:li hash " " [:a {:href (patch-url hash)} message]])]]]))))
 
-(defn now-iso8601
+(defn now-string
   "Returns the current date-time as a string in ISO8601 format."
   []
   (let [date-format (java.text.SimpleDateFormat. "yyyy-MMM-dd HH:mm 'UTC'")]
@@ -145,9 +145,9 @@
         [:a {:href (str "https://gitweb.torproject.org/tor-browser.git/log/?h="
                         branch)} branch]]
        [:li [:a {:href "https://bugzilla.mozilla.org/buglist.cgi?quicksearch=whiteboard%3A[tor]"}"whiteboard[tor] bugs on bugzilla.mozilla.org"]]]]
-     [:p [:span {:style "font-style: italic"} "Last update: " (.toString (java.util.Date.))]
+     [:p [:span {:style "font-style: italic"} "Last update: " (now-string) " "]
          [:span [:a {:href "https://github.com/arthuredelstein/torpatches"}
-                    " (Source on github)"]]]
+                    "(Source on github)"]]]
      ])))
 
 (defn -main [& args]
