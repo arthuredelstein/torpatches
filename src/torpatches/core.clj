@@ -122,6 +122,13 @@
          (for [[hash message] commits]
            [:li hash " " [:a {:href (patch-url hash)} message]])]]]))))
 
+(defn now-iso8601
+  "Returns the current date-time as a string in ISO8601 format."
+  []
+  (let [date-format (java.text.SimpleDateFormat. "yyyy-MMM-dd HH:mm 'UTC'")]
+    (.setTimeZone date-format (java.util.TimeZone/getTimeZone "UTC"))
+    (.format date-format (java.util.Date.))))
+
 (defn write-index
   "Write an index.html file that is visible at https://torpat.ch .
    Shows time of last update."
@@ -132,12 +139,16 @@
     [:head [:title "torpat.ch"] [:meta {:charset "utf-8"}]]
     [:body
      [:h3 "torpat.ch"]
-     [:p "Last update: " (.toString (java.util.Date.))]
-     [:p "Current tor-browser.git branch: "
-      [:a {:href (str "https://gitweb.torproject.org/tor-browser.git/log/?h="
-                      branch)} branch]]
-     [:p [:a {:href "https://github.com/arthuredelstein/torpatches"}
-          "Source on github"]]])))
+     [:p "Useful links:"
+      [:ul
+       [:li "Current tor-browser.git branch: "
+        [:a {:href (str "https://gitweb.torproject.org/tor-browser.git/log/?h="
+                        branch)} branch]]
+       [:li [:a {:href "https://bugzilla.mozilla.org/buglist.cgi?quicksearch=whiteboard%3A[tor]"}"whiteboard[tor] bugs on bugzilla.mozilla.org"]]]]
+     [:p [:span {:style "font-style: italic"} "Last update: " (.toString (java.util.Date.))]
+         [:span [:a {:href "https://github.com/arthuredelstein/torpatches"}
+                    " (Source on github)"]]]
+     ])))
 
 (defn -main [& args]
   "The main program. Works out the Tor Browser trac ticket number for each
