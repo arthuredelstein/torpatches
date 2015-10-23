@@ -123,7 +123,7 @@
            [:li hash " " [:a {:href (patch-url hash)} message]])]]]))))
 
 (defn now-string
-  "Returns the current date-time as a string in ISO8601 format."
+  "Returns the current date-time in UTC as a reasonably readable string."
   []
   (let [date-format (java.text.SimpleDateFormat. "yyyy-MMM-dd HH:mm 'UTC'")]
     (.setTimeZone date-format (java.util.TimeZone/getTimeZone "UTC"))
