@@ -7,6 +7,12 @@
             [clojure.string :as string]
             [hiccup.page :as page]))
 
+(defn match
+  "Use a regular expression to find the first matching
+   item (use parentheses)."
+  [re s]
+  (some-> (re-find re s) second))
+
 (defn shell-lines
   "Send the line to the shell, and return a sequence
    of lines from the resulting process's output."
@@ -29,7 +35,9 @@
   []
   (->> (branches "../tor-browser")
        (filter #(.startsWith % "remotes/origin/tor-browser-"))
-       sort reverse first))
+       sort
+       (sort-by #(match #"esr\-([^x]*+)" %))
+       last))
 
 (defn latest-commits
   "Get the latest n patches for the given branch."
@@ -39,12 +47,6 @@
                          branch "~" n ".." branch)
                     :dir "../tor-browser")
        (map #(string/split % #"\s" 2))))
-
-(defn match
-  "Use a regular expression to find the first matching
-   item (use parentheses)."
-  [re s]
-  (some-> (re-find re s) second))
 
 (defn bug-number
   "Takes a commit message and extracts the bug number."
