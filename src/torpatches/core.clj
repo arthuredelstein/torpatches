@@ -105,6 +105,13 @@
   [[trac-ticket [[hash _]]]]
   (str "location /" trac-ticket " { rewrite ^ " (patch-url hash) "; }\n"))
 
+(defn now-string
+  "Returns the current date-time in UTC as a reasonably readable string."
+  []
+  (let [date-format (java.text.SimpleDateFormat. "yyyy-MMM-dd HH:mm 'UTC'")]
+    (.setTimeZone date-format (java.util.TimeZone/getTimeZone "UTC"))
+    (.format date-format (java.util.Date.))))
+
 (defn footer
   "A footer for each page."
   []
@@ -150,13 +157,6 @@
     (write-patch-list "isolation"
                       "Tor Browser Isolation Patches"
                       isolation-commits)))
-
-(defn now-string
-  "Returns the current date-time in UTC as a reasonably readable string."
-  []
-  (let [date-format (java.text.SimpleDateFormat. "yyyy-MMM-dd HH:mm 'UTC'")]
-    (.setTimeZone date-format (java.util.TimeZone/getTimeZone "UTC"))
-    (.format date-format (java.util.Date.))))
 
 (defn write-index
   "Write an index.html file that is visible at https://torpat.ch .
