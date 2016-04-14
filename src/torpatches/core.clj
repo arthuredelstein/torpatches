@@ -174,7 +174,8 @@
         [:a {:href (str "https://gitweb.torproject.org/tor-browser.git/log/?h="
                         branch)} branch]]
        [:li [:a {:href "https://bugzilla.mozilla.org/buglist.cgi?quicksearch=whiteboard%3A[tor]"}
-             "whiteboard:[tor] bugs on bugzilla.mozilla.org"]]]]
+             "whiteboard:[tor] bugs on bugzilla.mozilla.org"]]
+       [:li [:a {:href "/isolation"} "Isolation patches"]]]]
      (footer)
      ])))
 
