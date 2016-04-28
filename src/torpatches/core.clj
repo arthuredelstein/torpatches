@@ -29,6 +29,10 @@
   [dir]
   (shell-lines "git branch -a" :dir dir))
 
+(defn fetch-latest-branches! []
+  "Download the latest tor-browser branches from git.torproject.org."
+  (shell-lines "git fetch origin" :dir "../tor-browser"))
+
 (defn newest-tor-browser-branch
   "Get the name of the most recent Tor Browser branch.
    Assumes branches are named by semantic versioning."
@@ -42,7 +46,6 @@
 (defn latest-commits
   "Get the latest n patches for the given branch."
   [branch n]
-  (shell-lines "git fetch origin" :dir "../tor-browser")
   (->> (shell-lines (str "git log --oneline "
                          branch "~" n ".." branch)
                     :dir "../tor-browser")
@@ -61,13 +64,17 @@
   [hash]
   (str "https://gitweb.torproject.org/tor-browser.git/patch/?id=" hash))
 
+(defn contains-any
+  "Returns first item in fragments can that be found in string."
+  [string fragments]
+  (some #(.contains string %) fragments))
+
 (defn remove-mozilla-commits
-  "Remove mozilla commits, which are obvious from an 'r=' tag."
+  "Remove mozilla commits, which are obvious from an 'r=' tag
+   or similar."
   [commits]
   (remove #(let [[hash msg] %]
-             (or (.contains msg "r=")
-                 (.contains msg "a=")
-                 (.contains msg "No bug,")))
+             (contains-any msg ["r=" "a=" "No bug,"]))
           commits))
 
 (defn read-bugs-list
@@ -153,7 +160,8 @@
   "Create an HTML page that displays a list of the isolation
    pages."
   [bugs-list]
-  (let [isolation-commits (filter #(-> % second (.contains "solat")) bugs-list)]
+  (let [isolation-commits (filter #(-> % second (contains-any ["solat" "#5742"]))
+                                  bugs-list)]
     (write-patch-list "isolation"
                       "Tor Browser Isolation Patches"
                       isolation-commits)))
@@ -185,6 +193,7 @@
    https://torpat.ch/#### (where #### is the ticker number) to the patch at
    https://gitweb.torproject.org. For bugs with multiple patches,
    creates a page at https://torpat.ch/#### that links to each of those patches."
+  (fetch-latest-branches!)
   (let [branch (newest-tor-browser-branch)
         bugs-list (read-bugs-list branch)
         [single-patch-bugs multi-patch-bugs] (singles-and-multiples bugs-list)]
