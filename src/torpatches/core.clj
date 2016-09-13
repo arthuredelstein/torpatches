@@ -5,7 +5,9 @@
   {:author "Arthur Edelstein"}
   (:require [clojure.java.shell :as shell]
             [clojure.string :as string]
-            [hiccup.page :as page]))
+            [hiccup.page :as page]
+            [hiccup.util]
+            [clj-http.client :as client]))
 
 (defn match
   "Use a regular expression to find the first matching
@@ -55,7 +57,7 @@
   "Takes a commit message and extracts the bug number."
   [commit-message]
   (or (match #"(TB\d+)" commit-message)
-      (match #"[Bb]ug \#?([0-9]+)" commit-message)
+      (match #"[Bb]ug \#?([0-9\.]+)" commit-message)
       (match #"\#?([0-9]+)" commit-message)
       "None"))
 
@@ -83,6 +85,91 @@
   (->> (latest-commits branch 200)
        remove-mozilla-commits
        (remove nil?)))
+
+(defn fetch-hg-commits [mozilla-bug-id]
+  (let [url (str "https://hg.mozilla.org/mozilla-central/json-log?rev=Bug+"
+                 mozilla-bug-id)]
+    (-> (client/get url {:as :json})
+        :body :entries)))
+
+(defn fetch-mozilla-bugs
+  "Retrieve whiteboard:[tor bugs from bugzilla.mozilla.org REST API"
+  []
+  (-> (client/get "https://bugzilla.mozilla.org/rest/bug?whiteboard=[tor&include_fields=id,whiteboard,summary,status,resolution"
+      {:accept :json :as :json})
+      :body :bugs))
+
+(defn tor-bug-id-from-mozilla-summary
+  "Some bugzilla bugs have a Tor ticket label in the summary.
+   E.G.: 'Tests for first-party isolation of cache (Tor 13749)'
+   Extract the label."
+  [summary]
+  (second (re-find #"\(Tor (.+?)[\),]" summary)))
+
+(defn mozilla-bugs-by-tor-id
+  "Group mozilla-bugs by the Tor ticket number we read from the summary"
+  [mozilla-bugs]
+  (group-by #(-> % :summary tor-bug-id-from-mozilla-summary) mozilla-bugs))
+
+(defn elucidate
+  [data-map key fetch-fn name]
+  (assoc data-map name (fetch-fn (get data-map key))))
+
+(defn assemble-data-for-tor-commit
+  [tor-bug tor-to-mozilla-map]
+  (let [[hash title] tor-bug
+        id (bug-number title)
+        bugzilla (tor-to-mozilla-map id)
+        bugzilla2 (map #(elucidate % :id fetch-hg-commits :hg) bugzilla)]
+    {:hash hash :title title :id id :bugzilla bugzilla2}))
+
+(defn uplift-data
+  [tor-bugs-list]
+  (let [mozilla-bugs (fetch-mozilla-bugs)
+        mozilla-bug-map (mozilla-bugs-by-tor-id mozilla-bugs)]
+    (for [tor-bug tor-bugs-list]
+      (assemble-data-for-tor-commit tor-bug mozilla-bug-map))))
+
+(defn hg-patch-list-html
+  [hg]
+  (when (seq hg)
+    [:span
+     "&nbsp;["
+     (interpose
+      ",&nbsp;"
+      (for [commit hg]
+        (let [{:keys [node desc]} commit]
+          [:a {:title (hiccup.util/escape-html desc)
+               :href (str "https://hg.mozilla.org/mozilla-central/rev/"
+                          node)}
+           (.substring node 0 8)])))
+     "]"]))
+
+(defn bugzilla-list-html
+  [bugzilla]
+  (for [bz-bug bugzilla]
+    (let [{:keys [summary status resolution id hg]} bz-bug]
+      [:span
+       [:a
+        {:class (if (= status "RESOLVED") "resolved" "unresolved")
+         :title (hiccup.util/escape-html summary)
+         :href (str "https://bugzilla.mozilla.org/" id)}
+        id]
+       (hg-patch-list-html hg)
+       "<br>"])))
+
+(defn uplift-table
+  [uplift-data]
+  (do
+    [:table.uplift
+     (for [{:keys [id title status hash bugzilla]} uplift-data]
+       [:tr
+        [:td.id [:a {:href (str "https://trac.torproject.org/" id)}
+              (hiccup.util/escape-html id)]]
+        [:td.hash [:a {:href (patch-url hash)}
+              (hiccup.util/escape-html hash)]]
+        [:td.title (hiccup.util/escape-html title)]
+        [:td (bugzilla-list-html bugzilla)]])]))
 
 (defn separate
   "Returns [coll-true coll-false], where coll-true is every
@@ -118,7 +205,6 @@
   (let [date-format (java.text.SimpleDateFormat. "yyyy-MMM-dd HH:mm 'UTC'")]
     (.setTimeZone date-format (java.util.TimeZone/getTimeZone "UTC"))
     (.format date-format (java.util.Date.))))
-
 (defn footer
   "A footer for each page."
   []
@@ -133,7 +219,15 @@
    "/etc/nginx/redirects.txt"
    (apply str (map redirect-line single-patch-bugs))))
 
-(defn write-patch-list
+(defn html-patch-list
+  "Creates an HTML list of links to patches given in commits."
+  [commits]
+  [:pre
+   [:ul
+    (for [[hash message] commits]
+      [:li hash " " [:a {:href (patch-url hash)} (hiccup.util/escape-html message)]])]])
+
+(defn write-patch-list-page
   "Create an HTML page that displays a list of links to patches
    given in commits."
   [tag title commits]
@@ -143,33 +237,43 @@
     [:head [:title title] [:meta {:charset "utf-8"}]]
     [:body
      [:h3 title]
-     [:pre
-      [:ul
-       (for [[hash message] commits]
-         [:li hash " " [:a {:href (patch-url hash)} message]])]]
+     (html-patch-list commits)
      (footer)])))
+
+(defn write-uplift-page
+  [uplift-table]
+  (spit "../../torpat.ch/uplift"
+        (page/html5
+         [:head
+          [:title "Tor Uplift"]
+          [:meta {:charset "utf-8"}]
+          (page/include-css "main.css")]
+         [:body
+          [:h3 "Tor uplift progress"]
+          uplift-table
+          (footer)])))
 
 (defn write-indirect-page
   "Create an HTML page that displays a list of links to patches
    for a given Tor Browser bug."
   [[ticket commits]]
   (let [title (str "Patches for Tor Browser Bug #" ticket)]
-    (write-patch-list ticket title commits)))
+    (write-patch-list-page ticket title commits)))
 
 (defn write-isolation-page
   "Create an HTML page that displays a list of the isolation
    pages."
   [bugs-list]
-  (let [isolation-commits (filter #(-> % second (contains-any ["solat" "#5742"]))
+  (let [isolation-commits (filter #(-> % second (contains-any ["solat" "#5742" "13900"]))
                                   bugs-list)]
-    (write-patch-list "isolation"
-                      "Tor Browser Isolation Patches"
-                      isolation-commits)))
+    (write-patch-list-page "isolation"
+                           "Tor Browser Isolation Patches"
+                           isolation-commits)))
 
 (defn write-index
   "Write an index.html file that is visible at https://torpat.ch .
    Shows time of last update."
-  [branch]
+  [branch bugs-list]
   (spit
    "../../torpat.ch/index.html"
    (page/html5
@@ -183,7 +287,10 @@
                         branch)} branch]]
        [:li [:a {:href "https://bugzilla.mozilla.org/buglist.cgi?quicksearch=whiteboard%3A[tor]"}
              "whiteboard:[tor] bugs on bugzilla.mozilla.org"]]
-       [:li [:a {:href "/isolation"} "Isolation patches"]]]]
+       [:li [:a {:href "/isolation"} "Isolation patches"]]
+       [:li [:a {:href "https://wiki.mozilla.org/Security/Tor_Uplift/Tracking"} "Mozilla's Tor patch uplift bug dashboard"]]]]
+     (comment [:div "Full list of tor-browser bugs:"
+      (html-patch-list bugs-list)])
      (footer)
      ])))
 
@@ -196,6 +303,7 @@
   (fetch-latest-branches!)
   (let [branch (newest-tor-browser-branch)
         bugs-list (read-bugs-list branch)
+        uplift-table (uplift-table (uplift-data))
         [single-patch-bugs multi-patch-bugs] (singles-and-multiples bugs-list)]
     (write-redirect-file single-patch-bugs)
     (println "Wrote redirects file.")
@@ -203,5 +311,7 @@
     (println "Wrote isolation page.")
     (dorun (map write-indirect-page multi-patch-bugs))
     (println "Wrote multipatch link files.")
-    (write-index (last (.split branch "/")))
+    (write-uplift-page uplift-data)
+    (println "Wrote uplift page.")
+    (write-index (last (.split branch "/")) bugs-list)
     (println "Wrote index.")))

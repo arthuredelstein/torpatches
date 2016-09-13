@@ -4,4 +4,6 @@
   :main torpatches.core
   :license {:name "Public Domain"}
   :dependencies [[org.clojure/clojure "1.7.0"]
-                 [hiccup "1.0.5"]])
+                 [hiccup "1.0.5"]
+                 [clj-http "2.2.0"]
+                 [cheshire "5.6.3"]])
