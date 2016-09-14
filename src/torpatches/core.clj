@@ -303,7 +303,7 @@
   (fetch-latest-branches!)
   (let [branch (newest-tor-browser-branch)
         bugs-list (read-bugs-list branch)
-        uplift-table (uplift-table (uplift-data))
+        uplift-table (uplift-table (uplift-data bugs-list))
         [single-patch-bugs multi-patch-bugs] (singles-and-multiples bugs-list)]
     (write-redirect-file single-patch-bugs)
     (println "Wrote redirects file.")
