@@ -311,7 +311,7 @@
     (println "Wrote isolation page.")
     (dorun (map write-indirect-page multi-patch-bugs))
     (println "Wrote multipatch link files.")
-    (write-uplift-page uplift-data)
+    (write-uplift-page uplift-table)
     (println "Wrote uplift page.")
     (write-index (last (.split branch "/")) bugs-list)
     (println "Wrote index.")))
