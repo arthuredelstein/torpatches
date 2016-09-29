@@ -86,7 +86,9 @@
        remove-mozilla-commits
        (remove nil?)))
 
-(defn fetch-hg-commits [mozilla-bug-id]
+(defn fetch-hg-commits
+  "Fetches all mozilla-central commits for a given mozilla bug."
+  [mozilla-bug-id]
   (let [url (str "https://hg.mozilla.org/mozilla-central/json-log?rev=Bug+"
                  mozilla-bug-id)]
     (-> (client/get url {:as :json})
@@ -99,23 +101,27 @@
       {:accept :json :as :json})
       :body :bugs))
 
-(defn tor-bug-id-from-mozilla-summary
-  "Some bugzilla bugs have a Tor ticket label in the summary.
+(defn tor-bug-id-from-mozilla-bug
+  "Some bugzilla bugs have a Tor ticket label in the summary or whiteboard.
    E.G.: 'Tests for first-party isolation of cache (Tor 13749)'
    Extract the label."
-  [summary]
-  (second (re-find #"\(Tor (.+?)[\),]" summary)))
+  [{:keys [summary whiteboard]}]
+  (or (second (re-find #"\(Tor (.+?)[\),]" summary))
+      (second (re-find #"\[tor (.+?)\]" whiteboard))))
 
 (defn mozilla-bugs-by-tor-id
   "Group mozilla-bugs by the Tor ticket number we read from the summary"
   [mozilla-bugs]
-  (group-by #(-> % :summary tor-bug-id-from-mozilla-summary) mozilla-bugs))
+  (group-by tor-bug-id-from-mozilla-bug mozilla-bugs))
 
 (defn elucidate
+  "Get the value from data-map at key, applies (fetch-fn key) and inserts the
+   return value back into data-map at name."
   [data-map key fetch-fn name]
   (assoc data-map name (fetch-fn (get data-map key))))
 
 (defn assemble-data-for-tor-commit
+  "Combines data from Tor and Mozilla for a given tor patch."
   [tor-bug tor-to-mozilla-map]
   (let [[hash title] tor-bug
         id (bug-number title)
@@ -124,6 +130,7 @@
     {:hash hash :title title :id id :bugzilla bugzilla2}))
 
 (defn uplift-data
+  "Retrieves the full uplift table data given a list of tor patches."
   [tor-bugs-list]
   (let [mozilla-bugs (fetch-mozilla-bugs)
         mozilla-bug-map (mozilla-bugs-by-tor-id mozilla-bugs)]
@@ -131,6 +138,9 @@
       (assemble-data-for-tor-commit tor-bug mozilla-bug-map))))
 
 (defn hg-patch-list-html
+  "Generates some HTML to present a list of Mozilla mercurical patches
+   that have landed for the given hg bug. Presents them between square
+   brackets and separated by commas."
   [hg]
   (when (seq hg)
     [:span
@@ -146,6 +156,7 @@
      "]"]))
 
 (defn bugzilla-list-html
+  "Shows a list of bugzilla bugs and the corresponding Firefox patches, if any."
   [bugzilla]
   (for [bz-bug bugzilla]
     (let [{:keys [summary status resolution id hg]} bz-bug]
@@ -159,17 +170,22 @@
        "<br>"])))
 
 (defn uplift-table
+  "Generates the entire uplift table in HTML."
   [uplift-data]
   (do
     [:table.uplift
      (for [{:keys [id title status hash bugzilla]} uplift-data]
-       [:tr
-        [:td.id [:a {:href (str "https://trac.torproject.org/" id)}
-              (hiccup.util/escape-html id)]]
-        [:td.hash [:a {:href (patch-url hash)}
-              (hiccup.util/escape-html hash)]]
-        [:td.title (hiccup.util/escape-html title)]
-        [:td (bugzilla-list-html bugzilla)]])]))
+       (let [resolved (apply = "RESOLVED" (map :status bugzilla))
+             state (cond (empty? bugzilla) "unfiled"
+                         resolved "resolved"
+                         (not resolved) "unresolved")]
+         [:tr {:class state}
+          [:td.id [:a {:href (str "https://trac.torproject.org/" id)}
+                   (hiccup.util/escape-html id)]]
+          [:td.hash [:a {:href (patch-url hash)}
+                     (hiccup.util/escape-html hash)]]
+          [:td.title (hiccup.util/escape-html title)]
+          [:td (bugzilla-list-html bugzilla)]]))]))
 
 (defn separate
   "Returns [coll-true coll-false], where coll-true is every
@@ -241,6 +257,7 @@
      (footer)])))
 
 (defn write-uplift-page
+  "Writes the uplift page, given the HTML uplift table."
   [uplift-table]
   (spit "../../torpat.ch/uplift"
         (page/html5
@@ -285,8 +302,8 @@
        [:li "Current tor-browser.git branch: "
         [:a {:href (str "https://gitweb.torproject.org/tor-browser.git/log/?h="
                         branch)} branch]]
-       [:li [:a {:href "https://bugzilla.mozilla.org/buglist.cgi?quicksearch=whiteboard%3A[tor]"}
-             "whiteboard:[tor] bugs on bugzilla.mozilla.org"]]
+       [:li [:a {:href "https://bugzilla.mozilla.org/buglist.cgi?quicksearch=whiteboard%3A[tor"}
+             "whiteboard:[tor bugs on bugzilla.mozilla.org"]]
        [:li [:a {:href "/isolation"} "Isolation patches"]]
        [:li [:a {:href "https://wiki.mozilla.org/Security/Tor_Uplift/Tracking"} "Mozilla's Tor patch uplift bug dashboard"]]]]
      (comment [:div "Full list of tor-browser bugs:"
