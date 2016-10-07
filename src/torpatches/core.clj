@@ -126,7 +126,7 @@
   (let [[hash title] tor-bug
         id (bug-number title)
         bugzilla (tor-to-mozilla-map id)
-        bugzilla2 (map #(elucidate % :id fetch-hg-commits :hg) bugzilla)]
+        bugzilla2 (pmap #(elucidate % :id fetch-hg-commits :hg) bugzilla)]
     {:hash hash :title title :id id :bugzilla bugzilla2}))
 
 (defn uplift-data
@@ -174,6 +174,11 @@
   [uplift-data]
   (do
     [:table.uplift
+     [:tr
+      [:th "Tor #"]
+      [:th "Tor hash"]
+      [:th "Tor name"]
+      [:th "Mozilla # [commits]"]]
      (for [{:keys [id title status hash bugzilla]} uplift-data]
        (let [resolved (apply = "RESOLVED" (map :status bugzilla))
              state (cond (empty? bugzilla) "unfiled"
@@ -262,7 +267,7 @@
   (spit "../../torpat.ch/uplift"
         (page/html5
          [:head
-          [:title "Tor Uplift"]
+          [:title "Tor Uplift (Under construction)"]
           [:meta {:charset "utf-8"}]
           (page/include-css "main.css")]
          [:body
@@ -305,7 +310,9 @@
        [:li [:a {:href "https://bugzilla.mozilla.org/buglist.cgi?quicksearch=whiteboard%3A[tor"}
              "whiteboard:[tor bugs on bugzilla.mozilla.org"]]
        [:li [:a {:href "/isolation"} "Isolation patches"]]
-       [:li [:a {:href "https://wiki.mozilla.org/Security/Tor_Uplift/Tracking"} "Mozilla's Tor patch uplift bug dashboard"]]]]
+       [:li [:a {:href "https://wiki.mozilla.org/Security/Tor_Uplift/Tracking"} "Mozilla's Tor patch uplift bug dashboard"]]
+       [:li [:a {:href "https://wiki.mozilla.org/Security/FirstPartyIsolation"} "Mozilla's first-party isolation patch dashboard"]]
+       [:li [:a {:href "/uplift"} "Tor -> Mozilla bug concordance for tracking patch uplift (Under construction)"]]]]
      (comment [:div "Full list of tor-browser bugs:"
       (html-patch-list bugs-list)])
      (footer)
