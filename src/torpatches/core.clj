@@ -5,6 +5,7 @@
   {:author "Arthur Edelstein"}
   (:require [clojure.java.shell :as shell]
             [clojure.string :as string]
+            [clojure.data.csv :as csv]
             [hiccup.page :as page]
             [hiccup.util]
             [clj-http.client :as client]))
@@ -61,6 +62,11 @@
       (match #"\#?([0-9]+)" commit-message)
       "None"))
 
+(defn cleanup-bug-number
+  "Takes a bug-number and returns one compatible with trac"
+  [bug-number]
+  (match #"^([0-9]+)" bug-number))
+
 (defn patch-url
   "Returns a URL for a tor-browser patch, given the hash."
   [hash]
@@ -86,6 +92,25 @@
        remove-mozilla-commits
        (remove nil?)))
 
+(defn fetch-trac-tickets
+  "Retrieve ticket data for a list of ticket ids"
+  [ids headers]
+  (let [id-clause (->> ids (map #(str "id=" %)) (string/join "&or&"))
+        col-clause (->> headers (map #(str "col=" %)) (string/join "&"))
+        url (str "https://trac.torproject.org/projects/tor/query?" id-clause "&" col-clause "&format=csv")]
+    (->> url client/get :body csv/read-csv)))
+
+(defn fetch-trac-data
+  "Retrieve ticket data from trac for the given ticket ids. Returns a map of ids
+   to record maps."
+  [ids]
+  (let [headers ["id" "summary" "keywords" "status"]]
+    (->> (fetch-trac-tickets ids headers)
+         rest
+         (map #(zipmap headers %))
+         (map #(vector (% "id") (dissoc % "id")))
+         (into {}))))
+
 (defn fetch-hg-commits
   "Fetches all mozilla-central commits for a given mozilla bug."
   [mozilla-bug-id]
@@ -97,7 +122,7 @@
 (defn fetch-mozilla-bugs
   "Retrieve whiteboard:[tor bugs from bugzilla.mozilla.org REST API"
   []
-  (-> (client/get "https://bugzilla.mozilla.org/rest/bug?whiteboard=[tor&include_fields=id,whiteboard,summary,status,resolution"
+  (-> (client/get "https://bugzilla.mozilla.org/rest/bug?include_fields=id,whiteboard,summary,status,resolution&f1=status_whiteboard&f2=short_desc&j_top=OR&o1=anywordssubstr&o2=anywordssubstr&v1=[tor&v2=[tor (tor [Tor (Tor"
       {:accept :json :as :json})
       :body :bugs))
 
@@ -106,13 +131,19 @@
    E.G.: 'Tests for first-party isolation of cache (Tor 13749)'
    Extract the label."
   [{:keys [summary whiteboard]}]
-  (or (second (re-find #"\(Tor (.+?)[\),]" summary))
+  (or (second (re-find #"[\[\(][tT]or (.+?)[\)\],]" summary))
       (second (re-find #"\[tor (.+?)\]" whiteboard))))
 
 (defn mozilla-bugs-by-tor-id
   "Group mozilla-bugs by the Tor ticket number we read from the summary"
   [mozilla-bugs]
   (group-by tor-bug-id-from-mozilla-bug mozilla-bugs))
+
+(defn extract-keywords
+  [keywords-string]
+  (when keywords-string
+    (sort-by #(.toLowerCase %)
+             (string/split keywords-string #"[\,\s]+"))))
 
 (defn elucidate
   "Get the value from data-map at key, applies (fetch-fn key) and inserts the
@@ -122,20 +153,26 @@
 
 (defn assemble-data-for-tor-commit
   "Combines data from Tor and Mozilla for a given tor patch."
-  [tor-bug tor-to-mozilla-map]
+  [tor-bug tor-to-mozilla-map trac-data]
   (let [[hash title] tor-bug
         id (bug-number title)
         bugzilla (tor-to-mozilla-map id)
-        bugzilla2 (pmap #(elucidate % :id fetch-hg-commits :hg) bugzilla)]
-    {:hash hash :title title :id id :bugzilla bugzilla2}))
+        bugzilla2 bugzilla
+;        bugzilla2 (pmap #(elucidate % :id fetch-hg-commits :hg) bugzilla)
+        id-clean (cleanup-bug-number id)
+        trac (trac-data id-clean)
+        trac2 (elucidate trac "keywords" extract-keywords "keywords")]
+    {:hash hash :title title :id id :bugzilla bugzilla2 :trac trac2}))
 
 (defn uplift-data
   "Retrieves the full uplift table data given a list of tor patches."
   [tor-bugs-list]
   (let [mozilla-bugs (fetch-mozilla-bugs)
-        mozilla-bug-map (mozilla-bugs-by-tor-id mozilla-bugs)]
+        mozilla-bug-map (mozilla-bugs-by-tor-id mozilla-bugs)
+        ids (map (comp cleanup-bug-number bug-number second) tor-bugs-list)
+        trac-data (fetch-trac-data ids)]
     (for [tor-bug tor-bugs-list]
-      (assemble-data-for-tor-commit tor-bug mozilla-bug-map))))
+      (assemble-data-for-tor-commit tor-bug mozilla-bug-map trac-data))))
 
 (defn hg-patch-list-html
   "Generates some HTML to present a list of Mozilla mercurical patches
@@ -160,14 +197,13 @@
   [bugzilla]
   (for [bz-bug bugzilla]
     (let [{:keys [summary status resolution id hg]} bz-bug]
-      [:span
+      [:p
        [:a
         {:class (if (= status "RESOLVED") "resolved" "unresolved")
          :title (hiccup.util/escape-html summary)
          :href (str "https://bugzilla.mozilla.org/" id)}
         id]
-       (hg-patch-list-html hg)
-       "<br>"])))
+       (hg-patch-list-html hg)])))
 
 (defn uplift-table
   "Generates the entire uplift table in HTML."
@@ -176,21 +212,26 @@
     [:table.uplift
      [:tr
       [:th "Tor #"]
+      [:th "Tor keywords"]
       [:th "Tor hash"]
       [:th "Tor name"]
-      [:th "Mozilla # [commits]"]]
-     (for [{:keys [id title status hash bugzilla]} uplift-data]
+      [:th "Mozilla #"]
+      [:th "Mozilla commits"]
+     (for [{:keys [id title status hash trac bugzilla]} uplift-data]
        (let [resolved (apply = "RESOLVED" (map :status bugzilla))
              state (cond (empty? bugzilla) "unfiled"
                          resolved "resolved"
                          (not resolved) "unresolved")]
          [:tr {:class state}
-          [:td.id [:a {:href (str "https://trac.torproject.org/" id)}
+          [:td.id [:a {:href (str "https://trac.torproject.org/" id)
+                       :title (hiccup.util/escape-html (get trac "summary"))}
                    (hiccup.util/escape-html id)]]
+          [:td.keywords (for [keyword (get trac "keywords")]
+                          [:p (hiccup.util/escape-html keyword)])]
           [:td.hash [:a {:href (patch-url hash)}
                      (hiccup.util/escape-html hash)]]
           [:td.title (hiccup.util/escape-html title)]
-          [:td (bugzilla-list-html bugzilla)]]))]))
+          [:td (bugzilla-list-html bugzilla)]]))]]))
 
 (defn separate
   "Returns [coll-true coll-false], where coll-true is every
@@ -226,6 +267,7 @@
   (let [date-format (java.text.SimpleDateFormat. "yyyy-MMM-dd HH:mm 'UTC'")]
     (.setTimeZone date-format (java.util.TimeZone/getTimeZone "UTC"))
     (.format date-format (java.util.Date.))))
+
 (defn footer
   "A footer for each page."
   []
@@ -311,7 +353,8 @@
              "whiteboard:[tor bugs on bugzilla.mozilla.org"]]
        [:li [:a {:href "/isolation"} "Isolation patches"]]
        [:li [:a {:href "https://wiki.mozilla.org/Security/Tor_Uplift/Tracking"} "Mozilla's Tor patch uplift bug dashboard"]]
-       [:li [:a {:href "https://wiki.mozilla.org/Security/FirstPartyIsolation"} "Mozilla's first-party isolation patch dashboard"]]
+       [:li [:a {:href "https://wiki.mozilla.org/Security/FirstPartyIsolation"} "Mozilla's first-party isolation uplift patch dashboard"]]
+       [:li [:a {:href "https://wiki.mozilla.org/Security/Fingerprinting"} "Mozilla's fingerprinting uplift patch dashboard"]]
        [:li [:a {:href "/uplift"} "Tor -> Mozilla bug concordance for tracking patch uplift (Under construction)"]]]]
      (comment [:div "Full list of tor-browser bugs:"
       (html-patch-list bugs-list)])
