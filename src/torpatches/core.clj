@@ -34,7 +34,9 @@
 
 (defn fetch-latest-branches! []
   "Download the latest tor-browser branches from git.torproject.org."
-  (shell-lines "git fetch origin" :dir "../tor-browser"))
+  (shell-lines "git fetch origin"
+               :dir (.getCanonicalPath
+                     (clojure.java.io/file "../tor-browser"))))
 
 (defn newest-tor-browser-branch
   "Get the name of the most recent Tor Browser branch.
@@ -312,15 +314,18 @@
 
 (defn write-uplift-page
   "Writes the uplift page, given the HTML uplift table."
-  [uplift-table]
+  [branch uplift-table]
   (spit "../../torpat.ch/uplift"
         (page/html5
          [:head
-          [:title "Tor Uplift (Under construction)"]
+          [:title "Tor Uplift Tracker"]
           [:meta {:charset "utf-8"}]
           (page/include-css "main.css")]
          [:body
-          [:h3 "Tor uplift progress"]
+          [:h3 "Tor Uplift Tracker"]
+          [:p "Current tor-browser.git branch: "
+           [:a {:href (str "https://gitweb.torproject.org/tor-browser.git/log/?h="
+                           branch)} branch]]
           uplift-table
           (footer)])))
 
@@ -376,6 +381,7 @@
    creates a page at https://torpat.ch/#### that links to each of those patches."
   (fetch-latest-branches!)
   (let [branch (newest-tor-browser-branch)
+        short-branch (last (.split branch "/"))
         bugs-list (read-bugs-list branch)
         uplift-table (uplift-table (uplift-data bugs-list))
         [single-patch-bugs multi-patch-bugs] (singles-and-multiples bugs-list)]
@@ -385,7 +391,7 @@
     (println "Wrote isolation page.")
     (dorun (map write-indirect-page multi-patch-bugs))
     (println "Wrote multipatch link files.")
-    (write-uplift-page uplift-table)
+    (write-uplift-page short-branch uplift-table)
     (println "Wrote uplift page.")
-    (write-index (last (.split branch "/")) bugs-list)
+    (write-index short-branch bugs-list)
     (println "Wrote index.")))
