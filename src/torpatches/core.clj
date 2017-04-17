@@ -223,22 +223,22 @@
       [:th "Tor hash"]
       [:th "Tor name"]
       [:th "Mozilla #"]
-      [:th "Mozilla commits"]
-     (for [{:keys [id title status hash trac bugzilla]} uplift-data]
-       (let [resolved (apply = "RESOLVED" (map :status bugzilla))
-             state (cond (empty? bugzilla) "unfiled"
-                         resolved "resolved"
-                         (not resolved) "unresolved")]
-         [:tr {:class state}
-          [:td.id [:a {:href (str "https://trac.torproject.org/" id)
-                       :title (hiccup.util/escape-html (get trac "summary"))}
-                   (hiccup.util/escape-html id)]]
-          [:td.keywords (for [keyword (get trac "keywords")]
-                          [:p (hiccup.util/escape-html keyword)])]
-          [:td.hash [:a {:href (patch-url hash)}
-                     (hiccup.util/escape-html hash)]]
-          [:td.title (hiccup.util/escape-html title)]
-          [:td (bugzilla-list-html bugzilla)]]))]]))
+     ; [:th "Mozilla commits"]
+      (for [{:keys [id title status hash trac bugzilla]} uplift-data]
+        (let [resolved (apply = "RESOLVED" (map :status bugzilla))
+              state (cond (empty? bugzilla) "unfiled"
+                          resolved "resolved"
+                          (not resolved) "unresolved")]
+          [:tr {:class state}
+           [:td.id [:a {:href (str "https://trac.torproject.org/" id)
+                        :title (hiccup.util/escape-html (get trac "summary"))}
+                    (hiccup.util/escape-html id)]]
+           [:td.keywords (for [keyword (get trac "keywords")]
+                           [:p (hiccup.util/escape-html keyword)])]
+           [:td.hash [:a {:href (patch-url hash)}
+                      (hiccup.util/escape-html hash)]]
+           [:td.title (hiccup.util/escape-html title)]
+           [:td (bugzilla-list-html bugzilla)]]))]]))
 
 (defn separate
   "Returns [coll-true coll-false], where coll-true is every
