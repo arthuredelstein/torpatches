@@ -126,18 +126,25 @@
       {:accept :json :as :json})
       :body :bugs))
 
-(defn tor-bug-id-from-mozilla-bug
-  "Some bugzilla bugs have a Tor ticket label in the summary or whiteboard.
+(defn tor-bug-ids-from-mozilla-bug
+  "Some bugzilla bugs have one or more Tor ticket labels in the summary or whiteboard.
    E.G.: 'Tests for first-party isolation of cache (Tor 13749)'
    Extract the label."
   [{:keys [summary whiteboard]}]
-  (or (second (re-find #"[\[\(][tT]or (.+?)[\)\],]" summary))
-      (second (re-find #"\[tor (.+?)\]" whiteboard))))
+  (set
+   (map second
+        (concat (re-seq #"[\[\(][tT]or (.+?)[\)\],]" summary)
+                (re-seq #"\[tor (.+?)\]" whiteboard)))))
 
 (defn mozilla-bugs-by-tor-id
   "Group mozilla-bugs by the Tor ticket number we read from the summary"
   [mozilla-bugs]
-  (group-by tor-bug-id-from-mozilla-bug mozilla-bugs))
+  (group-by :tor
+    (apply concat
+      (for [mozilla-bug mozilla-bugs]
+        (let [bugs (tor-bug-ids-from-mozilla-bug mozilla-bug)]
+          (for [bug bugs]
+            (assoc mozilla-bug :tor bug)))))))
 
 (defn extract-keywords
   [keywords-string]
