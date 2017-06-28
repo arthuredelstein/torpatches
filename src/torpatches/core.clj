@@ -219,7 +219,7 @@
   [uplift-data]
   (do
     [:table.uplift
-     [:tr
+     [:tr.header
       [:th "Tor #"]
       [:th "Tor keywords"]
       [:th "Tor hash"]
