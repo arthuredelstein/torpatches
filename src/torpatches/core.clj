@@ -38,14 +38,17 @@
                :dir (.getCanonicalPath
                      (clojure.java.io/file "../tor-browser"))))
 
+
 (defn newest-tor-browser-branch
-  "Get the name of the most recent Tor Browser branch.
+  "Get the name of the most recent Tor Browser alpha branch.
    Assumes branches are named by semantic versioning."
   []
   (->> (branches "../tor-browser")
-       (filter #(.startsWith % "remotes/origin/tor-browser-"))
+       (map #(re-find #"remotes/origin/tor-browser-(.*?)esr-(.*?)-.*?$" %))
+       (map reverse)
+       (map vec)
        sort
-       ;(sort-by #(match #"esr\-([^x]*+)" %))
+       last
        last))
 
 (defn latest-commits
