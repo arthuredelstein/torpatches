@@ -144,12 +144,14 @@
 (defn mozilla-bugs-by-tor-id
   "Group mozilla-bugs by the Tor ticket number we read from the summary"
   [mozilla-bugs]
-  (group-by :tor
-    (apply concat
-      (for [mozilla-bug mozilla-bugs]
-        (let [bugs (tor-bug-ids-from-mozilla-bug mozilla-bug)]
-          (for [bug bugs]
-            (assoc mozilla-bug :tor bug)))))))
+  (->
+   (group-by :tor
+             (apply concat
+                    (for [mozilla-bug mozilla-bugs]
+                      (let [bugs (tor-bug-ids-from-mozilla-bug mozilla-bug)]
+                        (for [bug bugs]
+                          (assoc mozilla-bug :tor bug))))))
+   (assoc "24052" #{"1412081"})))
 
 (defn extract-keywords
   [keywords-string]
