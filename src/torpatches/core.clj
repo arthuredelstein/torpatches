@@ -243,14 +243,16 @@
      ; [:th "Mozilla commits"]
       (for [{:keys [id title status hash trac bugzilla]} uplift-data]
         (let [resolved (apply = true (map bugzilla-fixed? bugzilla))
-              state (cond (empty? bugzilla) "unfiled"
+              keywords (get trac "keywords")
+              state (cond (some #{"tbb-no-uplift"} keywords) "no-uplift"
+                          (empty? bugzilla) "unfiled"
                           resolved "resolved"
                           (not resolved) "unresolved")]
           [:tr {:class state}
            [:td.id [:a {:href (str "https://trac.torproject.org/" id)
                         :title (hiccup.util/escape-html (get trac "summary"))}
                     (hiccup.util/escape-html id)]]
-           [:td.keywords (for [keyword (get trac "keywords")]
+           [:td.keywords (for [keyword keywords]
                            [:p (hiccup.util/escape-html keyword)])]
            [:td.hash [:a {:href (patch-url hash)}
                       (hiccup.util/escape-html hash)]]
