@@ -304,7 +304,8 @@
   [single-patch-bugs]
   (spit
    "/etc/nginx/redirects.txt"
-   (apply str (map redirect-line single-patch-bugs))))
+   (apply str "location /uplift { rewrite ^ / ; }\n"
+          (map redirect-line single-patch-bugs))))
 
 (defn html-patch-list
   "Creates an HTML list of links to patches given in commits."
@@ -347,11 +348,12 @@
 (defn write-index
   "Write an index.html file that is visible at https://torpat.ch .
    Shows time of last update."
-  [branch bugs-list]
+  [branch uplift-table]
   (spit
    "../../torpat.ch/index.html"
    (page/html5
-    [:head [:title "torpat.ch"] [:meta {:charset "utf-8"}]]
+    [:head [:title "torpat.ch"] [:meta {:charset "utf-8"}]
+     (page/include-css "main.css")]
     [:body
      [:h3 "torpat.ch"]
      [:div "Useful links:"
@@ -361,7 +363,7 @@
        [:li [:a {:href "https://wiki.mozilla.org/Security/Tor_Uplift/Tracking"} "Mozilla's Tor patch uplift bug dashboard"]]
        [:li [:a {:href "https://wiki.mozilla.org/Security/FirstPartyIsolation"} "Mozilla's first-party isolation uplift patch dashboard"]]
        [:li [:a {:href "https://wiki.mozilla.org/Security/Fingerprinting"} "Mozilla's fingerprinting uplift patch dashboard"]]
-       [:li [:a {:href "https://wiki.mozilla.org/Security/Fingerprinting"} "Mozilla's Fusion page"]]]]
+       [:li [:a {:href "https://wiki.mozilla.org/Security/Fusion"} "Mozilla's Fusion page"]]]]
      [:h3 "Tor Uplift Tracker"]
      [:p "Current tor-browser.git branch: "
       [:a {:href (str "https://gitweb.torproject.org/tor-browser.git/log/?h="
@@ -386,5 +388,5 @@
     (println "Wrote redirects file.")
     (dorun (map write-indirect-page multi-patch-bugs))
     (println "Wrote multipatch link files.")
-    (write-index short-branch bugs-list)
+    (write-index short-branch uplift-table)
     (println "Wrote index.")))
