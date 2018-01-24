@@ -327,23 +327,6 @@
      (html-patch-list commits)
      (footer)])))
 
-(defn write-uplift-page
-  "Writes the uplift page, given the HTML uplift table."
-  [branch uplift-table]
-  (spit "../../torpat.ch/uplift"
-        (page/html5
-         [:head
-          [:title "Tor Uplift Tracker"]
-          [:meta {:charset "utf-8"}]
-          (page/include-css "main.css")]
-         [:body
-          [:h3 "Tor Uplift Tracker"]
-          [:p "Current tor-browser.git branch: "
-           [:a {:href (str "https://gitweb.torproject.org/tor-browser.git/log/?h="
-                           branch)} branch]]
-          uplift-table
-          (footer)])))
-
 (defn write-indirect-page
   "Create an HTML page that displays a list of links to patches
    for a given Tor Browser bug."
@@ -373,18 +356,17 @@
      [:h3 "torpat.ch"]
      [:div "Useful links:"
       [:ul
-       [:li "Current tor-browser.git branch: "
-        [:a {:href (str "https://gitweb.torproject.org/tor-browser.git/log/?h="
-                        branch)} branch]]
        [:li [:a {:href "https://bugzilla.mozilla.org/buglist.cgi?quicksearch=whiteboard%3A[tor"}
              "whiteboard:[tor bugs on bugzilla.mozilla.org"]]
-       [:li [:a {:href "/isolation"} "Isolation patches"]]
        [:li [:a {:href "https://wiki.mozilla.org/Security/Tor_Uplift/Tracking"} "Mozilla's Tor patch uplift bug dashboard"]]
        [:li [:a {:href "https://wiki.mozilla.org/Security/FirstPartyIsolation"} "Mozilla's first-party isolation uplift patch dashboard"]]
        [:li [:a {:href "https://wiki.mozilla.org/Security/Fingerprinting"} "Mozilla's fingerprinting uplift patch dashboard"]]
-       [:li [:a {:href "/uplift"} "Tor -> Mozilla bug concordance for tracking patch uplift (Under construction)"]]]]
-     (comment [:div "Full list of tor-browser bugs:"
-      (html-patch-list bugs-list)])
+       [:li [:a {:href "https://wiki.mozilla.org/Security/Fingerprinting"} "Mozilla's Fusion page"]]]]
+     [:h3 "Tor Uplift Tracker"]
+     [:p "Current tor-browser.git branch: "
+      [:a {:href (str "https://gitweb.torproject.org/tor-browser.git/log/?h="
+                      branch)} branch]]
+     uplift-table
      (footer)
      ])))
 
@@ -402,11 +384,7 @@
         [single-patch-bugs multi-patch-bugs] (singles-and-multiples bugs-list)]
     (write-redirect-file single-patch-bugs)
     (println "Wrote redirects file.")
-    (write-isolation-page bugs-list)
-    (println "Wrote isolation page.")
     (dorun (map write-indirect-page multi-patch-bugs))
     (println "Wrote multipatch link files.")
-    (write-uplift-page short-branch uplift-table)
-    (println "Wrote uplift page.")
     (write-index short-branch bugs-list)
     (println "Wrote index.")))
