@@ -244,7 +244,9 @@
       (for [{:keys [id title status hash trac bugzilla]} uplift-data]
         (let [resolved (apply = true (map bugzilla-fixed? bugzilla))
               keywords (get trac "keywords")
-              state (cond (some #{"tbb-no-uplift"} keywords) "no-uplift"
+              state (cond (or (some #{"tbb-no-uplift"} keywords)
+                              (.startsWith id "TB")
+                              (.contains title "Omnibox: Add DDG")) "no-uplift"
                           (empty? bugzilla) "unfiled"
                           resolved "resolved"
                           (not resolved) "unresolved")]
