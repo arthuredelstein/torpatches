@@ -127,7 +127,7 @@
 (defn fetch-mozilla-bugs
   "Retrieve whiteboard:[tor bugs from bugzilla.mozilla.org REST API"
   []
-  (-> (client/get "https://bugzilla.mozilla.org/rest/bug?include_fields=id,whiteboard,summary,status,resolution&f1=status_whiteboard&f2=short_desc&j_top=OR&o1=anywordssubstr&o2=anywordssubstr&v1=[tor&v2=[tor (tor [Tor (Tor"
+  (-> (client/get "https://bugzilla.mozilla.org/rest/bug?include_fields=id,whiteboard,summary,status,resolution,priority&f1=status_whiteboard&f2=short_desc&j_top=OR&o1=anywordssubstr&o2=anywordssubstr&v1=[tor&v2=[tor (tor [Tor (Tor"
       {:accept :json :as :json})
       :body :bugs))
 
@@ -151,7 +151,7 @@
                       (let [bugs (tor-bug-ids-from-mozilla-bug mozilla-bug)]
                         (for [bug bugs]
                           (assoc mozilla-bug :tor bug))))))
-   (assoc "24052" #{"1412081"})))
+   (assoc "24052" #{{:id "1412081"}})))
 
 (defn extract-keywords
   [keywords-string]
@@ -206,17 +206,27 @@
            (.substring node 0 8)])))
      "]"]))
 
+(defn bugzilla-fixed?
+  [{:keys [status resolution]}]
+  (or (= status "RESOLVED")
+      (= resolution "FIXED")))
+
 (defn bugzilla-list-html
   "Shows a list of bugzilla bugs and the corresponding Firefox patches, if any."
   [bugzilla]
   (for [bz-bug bugzilla]
-    (let [{:keys [summary status resolution id hg]} bz-bug]
+    (let [{:keys [summary status resolution id hg priority]} bz-bug
+          fixed (bugzilla-fixed? bz-bug)]
       [:p
        [:a
-        {:class (if (= status "RESOLVED") "resolved" "unresolved")
+        {:class (if fixed "resolved" "unresolved")
          :title (hiccup.util/escape-html summary)
          :href (str "https://bugzilla.mozilla.org/" id)}
         id]
+       (when (and (not fixed)
+                  (not-empty priority)
+                  (not= "--" priority))
+         (str "(" priority ")"))
        (hg-patch-list-html hg)])))
 
 (defn uplift-table
@@ -229,10 +239,10 @@
       [:th "Tor keywords"]
       [:th "Tor hash"]
       [:th "Tor name"]
-      [:th "Mozilla #"]
+      [:th "Moz # (Prio)"]
      ; [:th "Mozilla commits"]
       (for [{:keys [id title status hash trac bugzilla]} uplift-data]
-        (let [resolved (apply = "RESOLVED" (map :status bugzilla))
+        (let [resolved (apply = true (map bugzilla-fixed? bugzilla))
               state (cond (empty? bugzilla) "unfiled"
                           resolved "resolved"
                           (not resolved) "unresolved")]
