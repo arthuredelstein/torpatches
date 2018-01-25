@@ -65,6 +65,10 @@
   (or (match #"(TB\d+)" commit-message)
       (match #"[Bb]ug \#?([0-9\.]+)" commit-message)
       (match #"\#?([0-9]+)" commit-message)
+      (when (= commit-message "Allow std::unordered_*.") "24197")
+      (when (= commit-message "Don't break accessibility support for Windows") "21240")
+      (when (= commit-message "Revert \"Getting Tor Browser to build with accessibility enabled on Windows\"") "21240")
+      (when (= commit-message "Getting Tor Browser to build with accessibility enabled on Windows") "21240")
       "None"))
 
 (defn cleanup-bug-number
@@ -151,7 +155,9 @@
                       (let [bugs (tor-bug-ids-from-mozilla-bug mozilla-bug)]
                         (for [bug bugs]
                           (assoc mozilla-bug :tor bug))))))
-   (assoc "24052" #{{:id "1412081"}})))
+   (assoc "24052" #{{:id "1412081"}})
+   (assoc "24398" #{{:id "1412081"}})
+   ))
 
 (defn extract-keywords
   [keywords-string]
@@ -296,6 +302,10 @@
     (.setTimeZone date-format (java.util.TimeZone/getTimeZone "UTC"))
     (.format date-format (java.util.Date.))))
 
+(defn compress-css
+  [css-string]
+  (s/replace css-string #"\s+" " "))
+
 (defn footer
   "A footer for each page."
   []
@@ -356,8 +366,10 @@
   (spit
    "../../torpat.ch/index.html"
    (page/html5
-    [:head [:title "torpat.ch"] [:meta {:charset "utf-8"}]
-     (page/include-css "main.css")]
+    [:head
+     [:title "torpat.ch"]
+     [:meta {:charset "utf-8"}]
+     [:style {:type "text/css"} (compress-css (slurp "main.css"))]]
     [:body
      [:h3 "torpat.ch"]
      [:div "Useful links:"
