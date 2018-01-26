@@ -1,4 +1,3 @@
-// The main CSS file for torpat.ch
 table.uplift { table-layout: fixed; }
 table.uplift {
     font-family: monospace;
@@ -9,9 +8,10 @@ table.uplift p { margin: 0px; }
 table.uplift tr { margin: 3px; }
 table.uplift td { padding: 3px; }
 table.uplift tr { background-color: #ddd; }
-table.uplift tr.resolved { background-color: lightgreen; }
-table.uplift tr.unresolved { background-color: yellow; }
-table.uplift tr.no-uplift { background-color: plum; }
+table.uplift .resolved { background-color: lightgreen; }
+table.uplift .unresolved { background-color: yellow; }
+table.uplift .no-uplift { background-color: pink; }
+table.uplift .key { font-weight: bold; }
 table.uplift td { vertical-align: top; }
 table.uplift td.id { width: 5em; }
 table.uplift td.hash { width: 6em; }

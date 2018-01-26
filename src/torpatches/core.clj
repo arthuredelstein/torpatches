@@ -214,7 +214,7 @@
 
 (defn bugzilla-fixed?
   [{:keys [status resolution]}]
-  (or (= status "RESOLVED")
+  (or ;(= status "RESOLVED")
       (= resolution "FIXED")))
 
 (defn bugzilla-list-html
@@ -234,6 +234,16 @@
                   (not= "--" priority))
          (str "(" priority ")"))
        (hg-patch-list-html hg)])))
+
+(def legend-table
+  "HTML table with color codes explained."
+  [:table.uplift
+   [:tr
+    [:td.key "Key:"]
+    [:td.resolved "Uplifted"]
+    [:td.unresolved "Moz bug open"]
+    [:td.no-uplift "Don't uplift"]
+    [:td "Untriaged"]]])
 
 (defn uplift-table
   "Generates the entire uplift table in HTML."
@@ -304,7 +314,7 @@
 
 (defn compress-css
   [css-string]
-  (s/replace css-string #"\s+" " "))
+  (clojure.string/replace css-string #"\s+" " "))
 
 (defn footer
   "A footer for each page."
@@ -384,6 +394,7 @@
      [:p "Current tor-browser.git branch: "
       [:a {:href (str "https://gitweb.torproject.org/tor-browser.git/log/?h="
                       branch)} branch]]
+     legend-table
      uplift-table
      (footer)
      ])))
