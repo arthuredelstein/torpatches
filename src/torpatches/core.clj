@@ -69,6 +69,7 @@
       (when (= commit-message "Don't break accessibility support for Windows") "21240")
       (when (= commit-message "Revert \"Getting Tor Browser to build with accessibility enabled on Windows\"") "21240")
       (when (= commit-message "Getting Tor Browser to build with accessibility enabled on Windows") "21240")
+      (when (= commit-message "We don't take the SANDBOX_EXPORTS path and fix compile issues along our way") "16010")
       "None"))
 
 (defn cleanup-bug-number
