@@ -10,7 +10,7 @@ table.uplift td { padding: 3px; }
 table.uplift tr { background-color: #ddd; }
 table.uplift .resolved { background-color: lightgreen; }
 table.uplift .unresolved { background-color: #ffa; }
-table.uplift .no-uplift { background-color: lightblue; }
+table.uplift .no-uplift { background-color: #eae; }
 table.uplift .key { font-weight: bold; }
 table.uplift td { vertical-align: top; }
 table.uplift td.id { width: 5em; }
