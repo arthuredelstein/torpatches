@@ -158,6 +158,7 @@
                           (assoc mozilla-bug :tor bug))))))
    (assoc "24052" #{{:id "1412081"}})
    (assoc "24398" #{{:id "1412081"}})
+   (assoc "1344613" #{{:id "1344613"}})
    ))
 
 (defn extract-keywords
@@ -261,8 +262,10 @@
       (for [{:keys [id title status hash trac bugzilla]} uplift-data]
         (let [resolved (apply = true (map bugzilla-fixed? bugzilla))
               keywords (get trac "keywords")
-              state (cond (or (some #{"tbb-no-uplift"} keywords)
+              state (cond (or (some #{"tbb-no-uplift" "tbb-no-uplift-60"} keywords)
                               (.startsWith id "TB")
+                              (= id "11641")
+                              (= id "13252")
                               (.contains title "Omnibox: Add DDG")) "no-uplift"
                           (empty? bugzilla) "unfiled"
                           resolved "resolved"
