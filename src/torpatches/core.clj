@@ -450,6 +450,7 @@
    :body
    (re-seq #"tor-browser-linux64.*?a.*?_(.*?)\.tar.xz[^.]")
    (map second)
+   (map #(.replace % "es-ES" "es")) ; bit of a hack; oh well
    sort))
 
 (defn tbb-locales-we-can-add
