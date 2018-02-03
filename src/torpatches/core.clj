@@ -32,12 +32,12 @@
   [dir]
   (shell-lines "git branch -a" :dir dir))
 
-(defn fetch-latest-branches! []
+(defn fetch-latest-branches!
   "Download the latest tor-browser branches from git.torproject.org."
+  [repo-dir]
   (shell-lines "git fetch origin"
                :dir (.getCanonicalPath
-                     (clojure.java.io/file "../tor-browser"))))
-
+                     (clojure.java.io/file repo-dir))))
 
 (defn newest-tor-browser-branch
   "Get the name of the most recent Tor Browser alpha branch.
@@ -403,13 +403,50 @@
      (footer)
      ])))
 
+(defn completed-locales-in-branch
+  [branch]
+ ; (println branch)
+  (let [url (str "https://gitweb.torproject.org/translation.git/tree/?h="
+                 branch
+                 "_completed")]
+    (->>
+     (try (:body (client/get url))
+          (catch Exception e ""))
+     (re-seq #"<tr>.*?>d.*?/translation.git/tree/(.*?)\?h\=")
+     (map second)
+    )))
+
+(def locale-completed-branches
+  [ 
+   "tor-launcher-network-settings"
+   "tor-launcher-properties"
+   "tor-launcher-progress"
+   "torbutton-aboutdialogdtd"
+   "torbutton-abouttbupdatedtd"
+   "torbutton-abouttorproperties"
+   "torbutton-branddtd"
+   "torbutton-brandproperties"
+   "torbutton-browserproperties"
+;    "torbutton-torbuttondtd"
+;    "torbutton-torbuttonproperties"
+  ]
+)
+
+(defn complete-tbb-locales []
+  (->>
+   (for [branch locale-completed-branches]
+     (completed-locales-in-branch branch))
+   (map set)
+   (apply clojure.set/intersection)
+   sort))
+
 (defn -main [& args]
   "The main program. Works out the Tor Browser trac ticket number for each
    patch. For bugs with a single patch, generates a redirect from
    https://torpat.ch/#### (where #### is the ticker number) to the patch at
    https://gitweb.torproject.org. For bugs with multiple patches,
    creates a page at https://torpat.ch/#### that links to each of those patches."
-  (fetch-latest-branches!)
+  (fetch-latest-branches! "../tor-browser")
   (let [branch (newest-tor-browser-branch)
         short-branch (last (.split branch "/"))
         bugs-list (read-bugs-list branch)
