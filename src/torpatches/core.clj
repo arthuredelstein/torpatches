@@ -393,7 +393,8 @@
        [:li [:a {:href "https://wiki.mozilla.org/Security/Tor_Uplift/Tracking"} "Mozilla's Tor patch uplift bug dashboard"]]
        [:li [:a {:href "https://wiki.mozilla.org/Security/FirstPartyIsolation"} "Mozilla's first-party isolation uplift patch dashboard"]]
        [:li [:a {:href "https://wiki.mozilla.org/Security/Fingerprinting"} "Mozilla's fingerprinting uplift patch dashboard"]]
-       [:li [:a {:href "https://wiki.mozilla.org/Security/Fusion"} "Mozilla's Fusion page"]]]]
+       [:li [:a {:href "https://wiki.mozilla.org/Security/Fusion"} "Mozilla's Fusion page"]]
+       [:li [:a {:href "/locales"} "Tor Browser locales monitor"]]]]
      [:h3 "Tor Uplift Tracker"]
      [:p "Current tor-browser.git branch: "
       [:a {:href (str "https://gitweb.torproject.org/tor-browser.git/log/?h="
@@ -417,7 +418,7 @@
     )))
 
 (def locale-completed-branches
-  [ 
+  [
    "tor-launcher-network-settings"
    "tor-launcher-properties"
    "tor-launcher-progress"
@@ -426,19 +427,65 @@
    "torbutton-abouttorproperties"
    "torbutton-branddtd"
    "torbutton-brandproperties"
-   "torbutton-browserproperties"
-;    "torbutton-torbuttondtd"
-;    "torbutton-torbuttonproperties"
+ ;  "torbutton-browserproperties"
+   "torbutton-torbuttondtd"
+   "torbutton-torbuttonproperties"
   ]
 )
 
-(defn complete-tbb-locales []
+(defn completed-tbb-locales
+  []
   (->>
    (for [branch locale-completed-branches]
      (completed-locales-in-branch branch))
    (map set)
    (apply clojure.set/intersection)
+   sort
+   (map #(string/replace % "_" "-"))))
+
+(defn current-tbb-alpha-locales
+  []
+  (->>
+   (client/get "https://www.torproject.org/projects/torbrowser.html.en")
+   :body
+   (re-seq #"tor-browser-linux64.*?a.*?_(.*?)\.tar.xz[^.]")
+   (map second)
    sort))
+
+(defn tbb-locales-we-can-add
+  [translated released]
+  (sort (clojure.set/difference
+         (set translated)
+         (set released)
+         #{"en"} ; redundant
+         ;#{"en-GB" "fr-CA" "pt"} ; possibly redundant
+         )))
+
+(defn tbb-locale-data
+  []
+  (let [translated (completed-tbb-locales)
+        current (current-tbb-alpha-locales)]
+    {:translated translated
+     :current current
+     :new (tbb-locales-we-can-add translated current)}))
+
+(defn write-tbb-locale-page
+  [{:keys [translated current new]}]
+  (spit
+   "../../torpat.ch/locales"
+   (page/html5
+    [:head
+     [:title "torpat.ch: Tor Browser locales"]
+     [:style ".label { font-weight: bold; }"]]
+    [:body
+     [:h2 "Monitoring Tor Browser locales"]
+     [:p.label "Transifex translations complete:"]
+     [:p (clojure.string/join ", " translated)]
+     [:p.label "Tor Browser alphas already deployed:"]
+     [:p (clojure.string/join ", " current)]
+     [:p.label "Possible new Tor Browser locales:"]
+     [:p (clojure.string/join ", " new)]
+     (footer)])))
 
 (defn -main [& args]
   "The main program. Works out the Tor Browser trac ticket number for each
@@ -457,4 +504,6 @@
     (dorun (map write-indirect-page multi-patch-bugs))
     (println "Wrote multipatch link files.")
     (write-index short-branch uplift-table)
-    (println "Wrote index.")))
+    (println "Wrote index.")
+    (write-tbb-locale-page (tbb-locale-data))
+    (println "Wrote locales page.")))
