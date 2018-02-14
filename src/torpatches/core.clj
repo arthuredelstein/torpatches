@@ -8,6 +8,8 @@
             [clojure.data.csv :as csv]
             [hiccup.page :as page]
             [hiccup.util]
+            [hickory.core :as hickory]
+            [hickory.select]
             [clj-http.client :as client]))
 
 (defn match
@@ -249,7 +251,7 @@
 
 (defn uplift-table
   "Generates the entire uplift table in HTML."
-  [uplift-data]
+  [uplift-data show-completed]
   (do
     [:table.uplift
      [:tr.header
@@ -270,16 +272,19 @@
                           (empty? bugzilla) "unfiled"
                           resolved "resolved"
                           (not resolved) "unresolved")]
-          [:tr {:class state}
-           [:td.id [:a {:href (str "https://trac.torproject.org/" id)
-                        :title (hiccup.util/escape-html (get trac "summary"))}
-                    (hiccup.util/escape-html id)]]
-           [:td.keywords (for [keyword keywords]
-                           [:p (hiccup.util/escape-html keyword)])]
-           [:td.hash [:a {:href (patch-url hash)}
-                      (hiccup.util/escape-html hash)]]
-           [:td.title (hiccup.util/escape-html title)]
-           [:td (bugzilla-list-html bugzilla)]]))]]))
+          (when (or show-completed
+                    (= state "unresolved")
+                    (= state "unfiled"))
+            [:tr {:class state}
+             [:td.id [:a {:href (str "https://trac.torproject.org/" id)
+                          :title (hiccup.util/escape-html (get trac "summary"))}
+                      (hiccup.util/escape-html id)]]
+             [:td.keywords (for [keyword keywords]
+                             [:p (hiccup.util/escape-html keyword)])]
+             [:td.hash [:a {:href (patch-url hash)}
+                        (hiccup.util/escape-html hash)]]
+             [:td.title (hiccup.util/escape-html title)]
+             [:td (bugzilla-list-html bugzilla)]])))]]))
 
 (defn separate
   "Returns [coll-true coll-false], where coll-true is every
@@ -376,9 +381,9 @@
 (defn write-index
   "Write an index.html file that is visible at https://torpat.ch .
    Shows time of last update."
-  [branch uplift-table]
+  [path branch uplift-table]
   (spit
-   "../../torpat.ch/index.html"
+   path
    (page/html5
     [:head
      [:title "torpat.ch"]
@@ -390,12 +395,15 @@
       [:ul
        [:li [:a {:href "https://bugzilla.mozilla.org/buglist.cgi?quicksearch=whiteboard%3A[tor"}
              "whiteboard:[tor bugs on bugzilla.mozilla.org"]]
+       [:li [:a {:href "https://bugzilla.mozilla.org/buglist.cgi?priority=P1&f1=OP&f0=OP&o2=substring&f4=CP&query_format=advanced&j1=OR&f3=CP&f2=status_whiteboard&bug_status=UNCONFIRMED&bug_status=NEW&bug_status=ASSIGNED&bug_status=REOPENED&v2=%5Btor"}
+             "P1 whiteboard:[tor bugs on bugzilla.mozilla.org"]]
        [:li [:a {:href "https://wiki.mozilla.org/Security/Tor_Uplift/Tracking"} "Mozilla's Tor patch uplift bug dashboard"]]
        [:li [:a {:href "https://wiki.mozilla.org/Security/FirstPartyIsolation"} "Mozilla's first-party isolation uplift patch dashboard"]]
        [:li [:a {:href "https://wiki.mozilla.org/Security/Fingerprinting"} "Mozilla's fingerprinting uplift patch dashboard"]]
        [:li [:a {:href "https://wiki.mozilla.org/Security/Fusion"} "Mozilla's Fusion page"]]
-       [:li [:a {:href "/locales"} "Tor Browser locales monitor"]]]]
-     [:h3 "Tor Uplift Tracker"]
+       [:li [:a {:href "/locales"} "Tor Browser locales monitor"]]
+       [:li [:a {:href "https://arthuredelstein.net/exits"} "Tor Exit DNS Timeouts"]]]]
+     [:h3 "Tor Browser Uplift Tracker"]
      [:p "Current tor-browser.git branch: "
       [:a {:href (str "https://gitweb.torproject.org/tor-browser.git/log/?h="
                       branch)} branch]]
@@ -462,16 +470,61 @@
          ;#{"en-GB" "fr-CA" "pt"} ; possibly redundant
          )))
 
+(defn parse-file-size [s]
+  (let [factor (cond (nil? s) 0
+                     (.endsWith s "G") 1073741824
+                     (.endsWith s "M") 1048576
+                     (.endsWith s "K") 1024
+                     :default 1)
+        number-text (match #"([0-9.]+)" s)]
+    (* factor (Double/parseDouble number-text))))
+
+(defn file-sizes [url locale]
+  (let [lines (-> url client/get :body (string/split #"\n"))
+        locale_token (when locale (str "_" locale "."))]
+    (->> lines
+         (filter #(if locale_token (.contains % locale_token) identity))
+         (map #(match #"\s([0-9.]+[KM]?)\s*?$" %))
+         (remove nil?)
+         (map parse-file-size)
+         sort
+         reverse)))
+
+(defn dist-urls []
+  (let [home "https://dist.torproject.org/torbrowser/"
+        lines (-> home client/get :body (string/split #"\n"))]
+    (->> lines
+         (filter #(.contains % "folder.gif"))
+;         (filter #(.contains % "8.0a"))
+         (map #(match #"href=\"(.*?)\"" %))
+         (map #(str home %)))))
+
+(defn disk-space-bytes
+  "Looks at dist.torproject.org and works out how much disk
+   space is taken up by a single locale (zh-CN for this case)."
+  [filter]
+  (let [pages (dist-urls)
+        sizes (map #(file-sizes % filter) pages)]
+    (->> sizes (apply concat) (apply +))))
+
 (defn tbb-locale-data
   []
   (let [translated (completed-tbb-locales)
-        current (current-tbb-alpha-locales)]
+        current (current-tbb-alpha-locales)
+        new (tbb-locales-we-can-add translated current)
+        gb-total (/ (disk-space-bytes nil) 1073741824)
+        gb-single (/ (disk-space-bytes "zh-CN")
+                        1073741824)
+        gb-new (* (count new) gb-single)]
     {:translated translated
      :current current
-     :new (tbb-locales-we-can-add translated current)}))
+     :new new
+     :gb-total gb-total
+     :gb-single gb-single
+     :gb-new gb-new}))
 
 (defn write-tbb-locale-page
-  [{:keys [translated current new]}]
+  [{:keys [translated current new gb-total gb-single gb-new]}]
   (spit
    "../../torpat.ch/locales"
    (page/html5
@@ -486,6 +539,12 @@
      [:p (clojure.string/join ", " current)]
      [:p.label "Possible new Tor Browser locales:"]
      [:p (clojure.string/join ", " new)]
+     [:p.label "Total occuppied Tor Browser disk space:"]
+     [:p (format "%.2f" gb-total) " GB"]
+     [:p.label "Needed disk space for one locale:"]
+     [:p (format "%.2f" gb-single) " GB"]
+     [:p.label "Expected additional disk space for all new locales:"]
+     [:p (format "%.2f" gb-new) " GB"]
      (footer)])))
 
 (defn -main [& args]
@@ -498,13 +557,17 @@
   (let [branch (newest-tor-browser-branch)
         short-branch (last (.split branch "/"))
         bugs-list (read-bugs-list branch)
-        uplift-table (uplift-table (uplift-data bugs-list))
+        uplift-data (uplift-data bugs-list)
+        uplift-table-long (uplift-table uplift-data true)
+        uplift-table-short (uplift-table uplift-data false)
         [single-patch-bugs multi-patch-bugs] (singles-and-multiples bugs-list)]
     (write-redirect-file single-patch-bugs)
     (println "Wrote redirects file.")
     (dorun (map write-indirect-page multi-patch-bugs))
     (println "Wrote multipatch link files.")
-    (write-index short-branch uplift-table)
+    (write-index  "../../torpat.ch/index.html" short-branch uplift-table-long)
     (println "Wrote index.")
+    (write-index  "../../torpat.ch/short" short-branch uplift-table-short)
+    (println "Wrote short.")
     (write-tbb-locale-page (tbb-locale-data))
     (println "Wrote locales page.")))
