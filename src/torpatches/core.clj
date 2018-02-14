@@ -241,13 +241,16 @@
 
 (def legend-table
   "HTML table with color codes explained."
-  [:table.uplift
-   [:tr
-    [:td.key "Key:"]
-    [:td.resolved "Uplifted"]
-    [:td.unresolved "Moz bug open"]
-    [:td.no-uplift "Don't uplift"]
-    [:td "Untriaged"]]])
+  [:div.key
+   [:div.key-title "Key:"]
+   [:div.resolved "Uplifted"]
+   [:div.unresolved "Moz bug open"]
+   [:div.no-uplift "Don't uplift"]
+   [:div.unfiled "Untriaged"]
+   [:div "[ "
+    [:a {:href "/"} "long"] " | "
+    [:a {:href "/short"} "short"]
+    " ]"]])
 
 (defn uplift-table
   "Generates the entire uplift table in HTML."

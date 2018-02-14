@@ -1,17 +1,12 @@
 table.uplift { table-layout: fixed; }
 table.uplift {
-    font-family: monospace;
-    font-size: 12px;
-    white-space: pre-wrap;
+  font-family: monospace;
+  font-size: 12px;
+  white-space: pre-wrap;
 }
 table.uplift p { margin: 0px; }
 table.uplift tr { margin: 3px; }
 table.uplift td { padding: 3px; }
-table.uplift tr { background-color: #ddd; }
-table.uplift .resolved { background-color: lightgreen; }
-table.uplift .unresolved { background-color: #ffa; }
-table.uplift .no-uplift { background-color: #eae; }
-table.uplift .key { font-weight: bold; }
 table.uplift td { vertical-align: top; }
 table.uplift td.id { width: 5em; }
 table.uplift td.hash { width: 6em; }
@@ -20,3 +15,14 @@ table.uplift td.bugzilla { width: 6em; }
 table.uplift td a.resolved { text-decoration: line-through; }
 table.uplift th { text-align: left; font-size: 14px; padding: 3px; }
 table.uplift th { background-color: lightgray; }
+
+.resolved { background-color: lightgreen; }
+.unresolved { background-color: #ffa; }
+.no-uplift { background-color: #eae; }
+.key-title { font-weight: bold; }
+.unfiled { background-color: #ddd; }
+
+.key div {
+  display: table-cell;
+  padding: 4px;
+}
