@@ -131,11 +131,38 @@
     (-> (client/get url {:as :json})
         :body :entries)))
 
+(defn fetch-mozilla-attachments
+  [bug-id]
+  (try
+    (-> (client/get (str "https://bugzilla.mozilla.org/rest/bug/"
+                         bug-id
+                         "/attachment")
+                    {:accept :json :as :json})
+        :body
+        :bugs
+        (get (keyword (str bug-id))))
+    (catch Exception e nil)))
+
+(defn latest-review-status
+  [flag-list]
+  (->> flag-list
+       (filter #(-> % :name (= "review")))
+       last
+       :status))
+
+(defn fetch-mozilla-review-flags
+  [bug-id]
+  (->> (fetch-mozilla-attachments bug-id)
+       (remove #(-> % :is_obsolete (= 1)))
+       (map :flags)
+       (map latest-review-status)
+       (into (sorted-set))))
+
 (defn fetch-mozilla-bugs
   "Retrieve whiteboard:[tor bugs from bugzilla.mozilla.org REST API"
   []
   (-> (client/get "https://bugzilla.mozilla.org/rest/bug?include_fields=id,whiteboard,summary,status,resolution,priority&f1=status_whiteboard&f2=short_desc&j_top=OR&o1=anywordssubstr&o2=anywordssubstr&v1=[tor&v2=[tor (tor [Tor (Tor"
-      {:accept :json :as :json})
+                  {:accept :json :as :json})
       :body :bugs))
 
 (defn tor-bug-ids-from-mozilla-bug
@@ -155,12 +182,12 @@
    (group-by :tor
              (apply concat
                     (for [mozilla-bug mozilla-bugs]
-                      (let [bugs (tor-bug-ids-from-mozilla-bug mozilla-bug)]
-                        (for [bug bugs]
-                          (assoc mozilla-bug :tor bug))))))
+                      (let [tor-ids (tor-bug-ids-from-mozilla-bug mozilla-bug)]
+                        (for [tor-id tor-ids]
+                          (assoc mozilla-bug :tor tor-id))))))
    (assoc "24052" #{{:id "1412081"}})
    (assoc "24398" #{{:id "1412081"}})
-   (assoc "1344613" #{{:id "1344613"}})
+;   (assoc "1344613" #{{:id "1344613"}})
    ))
 
 (defn extract-keywords
@@ -181,7 +208,8 @@
   (let [[hash title] tor-bug
         id (bug-number title)
         bugzilla (tor-to-mozilla-map id)
-        bugzilla2 bugzilla
+        bugzilla2 (map #(elucidate % :id fetch-mozilla-review-flags :flags) bugzilla)
+     ;   bugzilla2 bugzilla
 ;        bugzilla2 (pmap #(elucidate % :id fetch-hg-commits :hg) bugzilla)
         id-clean (cleanup-bug-number id)
         trac (trac-data id-clean)
@@ -225,7 +253,7 @@
   "Shows a list of bugzilla bugs and the corresponding Firefox patches, if any."
   [bugzilla]
   (for [bz-bug bugzilla]
-    (let [{:keys [summary status resolution id hg priority]} bz-bug
+    (let [{:keys [summary status resolution id hg priority flags]} bz-bug
           fixed (bugzilla-fixed? bz-bug)]
       [:p
        [:a
@@ -236,7 +264,11 @@
        (when (and (not fixed)
                   (not-empty priority)
                   (not= "--" priority))
-         (str "(" priority ")"))
+         (str " (" priority ")")) " "
+       (when-not (empty? flags)
+         (str "["
+              (string/join "," (map #(str "r" %) flags))
+              "]"))
        (hg-patch-list-html hg)])))
 
 (def legend-table
