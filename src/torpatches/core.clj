@@ -100,7 +100,7 @@
 (defn read-bugs-list
   "Retrieve a list of [commit-hash commit-message]."
   [branch]
-  (->> (latest-commits branch 200)
+  (->> (latest-commits branch 300)
        remove-mozilla-commits
        (remove nil?)))
 
@@ -537,9 +537,9 @@
 (defn disk-space-bytes
   "Looks at dist.torproject.org and works out how much disk
    space is taken up by a single locale (zh-CN for this case)."
-  [filter]
+  [locale]
   (let [pages (dist-urls)
-        sizes (map #(file-sizes % filter) pages)]
+        sizes (map #(file-sizes % locale) pages)]
     (->> sizes (apply concat) (apply +))))
 
 (defn tbb-locale-data
