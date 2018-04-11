@@ -614,13 +614,13 @@
      [:title "torpat.ch: Support Portal locales"]
      [:style ".label { font-weight: bold; }"]]
     [:body
-     [:h2 "Monitoring SUpport Portal locales"]
+     [:h2 "Monitoring Support Portal locales"]
      [:p.label "Transifex translations complete:"]
      [:p (clojure.string/join ", " translated)]
-     [:p.label "Support Portal locales already deployed:"]
+     [:p.label "Locales already deployed:"]
      [:p "TODO"]
 ;     [:p (clojure.string/join ", " current)]
-     [:p.label "Possible new Support Portal locales:"]
+     [:p.label "Possible new locales:"]
      [:p "TODO"]
 ;     [:p (clojure.string/join ", " new)]
      (footer)])))
