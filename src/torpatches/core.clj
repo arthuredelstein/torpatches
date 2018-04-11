@@ -447,20 +447,7 @@
      (footer)
      ])))
 
-(defn completed-locales-in-branch
-  [branch]
- ; (println branch)
-  (let [url (str "https://gitweb.torproject.org/translation.git/tree/?h="
-                 branch
-                 "_completed")]
-    (->>
-     (try (:body (client/get url))
-          (catch Exception e ""))
-     (re-seq #"<tr>.*?>d.*?/translation.git/tree/(.*?)\?h\=")
-     (map second)
-    )))
-
-(def locale-completed-branches
+(def tbb-locale-branches
   [
    "tor-launcher-network-settings"
    "tor-launcher-properties"
@@ -476,8 +463,39 @@
   ]
 )
 
-(defn completed-tbb-locales
-  []
+(def support-locale-branches
+  [
+   "support-censorship"
+   "support-connecting"
+   "support-faq"
+   "support-gettor"
+   "support-https"
+   "support-miscellaneous"
+   "support-tbb"
+   "support-topics"
+   "support-tormessenger"
+   "support-tormobile"
+  ]
+)
+
+(defn completed-locales-in-branch
+  [branch]
+  (let [url (str "https://gitweb.torproject.org/translation.git/tree/?h="
+                 branch
+                 "_completed")]
+    (->>
+     (try (:body (client/get url))
+          (catch Exception e ""))
+     (re-seq #"translation.git/tree/(.*?)\?h\=")
+     (map second)
+     (remove #(or (= % "README")
+                  (.startsWith % ".")
+                  (empty? %)))
+     (map #(string/replace % ".json" ""))
+    )))
+
+(defn completed-locales
+  [locale-completed-branches]
   (->>
    (for [branch locale-completed-branches]
      (completed-locales-in-branch branch))
@@ -544,7 +562,7 @@
 
 (defn tbb-locale-data
   []
-  (let [translated (completed-tbb-locales)
+  (let [translated (completed-locales tbb-locale-branches)
         current (current-tbb-alpha-locales)
         new (tbb-locales-we-can-add translated current)
         gb-total (/ (disk-space-bytes nil) 1073741824)
@@ -582,6 +600,31 @@
      [:p (format "%.2f" gb-new) " GB"]
      (footer)])))
 
+(defn support-locale-data
+  []
+  (let [translated (completed-locales support-locale-branches)]
+    {:translated translated}))
+
+(defn write-support-locale-page
+  [{:keys [translated]}]
+  (spit
+   "../../torpat.ch/support-locales"
+   (page/html5
+    [:head
+     [:title "torpat.ch: Support Portal locales"]
+     [:style ".label { font-weight: bold; }"]]
+    [:body
+     [:h2 "Monitoring SUpport Portal locales"]
+     [:p.label "Transifex translations complete:"]
+     [:p (clojure.string/join ", " translated)]
+     [:p.label "Support Portal locales already deployed:"]
+     [:p "TODO"]
+;     [:p (clojure.string/join ", " current)]
+     [:p.label "Possible new Support Portal locales:"]
+     [:p "TODO"]
+;     [:p (clojure.string/join ", " new)]
+     (footer)])))
+
 (defn -main [& args]
   "The main program. Works out the Tor Browser trac ticket number for each
    patch. For bugs with a single patch, generates a redirect from
@@ -605,4 +648,6 @@
     (write-index  "../../torpat.ch/short" short-branch uplift-table-short)
     (println "Wrote short.")
     (write-tbb-locale-page (tbb-locale-data))
-    (println "Wrote locales page.")))
+    (println "Wrote TBB locales page.")
+    (write-support-locale-page (support-locale-data))
+    (println "Wrote support locales page.")))
