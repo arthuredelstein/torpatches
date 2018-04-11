@@ -437,6 +437,7 @@
        [:li [:a {:href "https://wiki.mozilla.org/Security/Fingerprinting"} "Mozilla's fingerprinting uplift patch dashboard"]]
        [:li [:a {:href "https://wiki.mozilla.org/Security/Fusion"} "Mozilla's Fusion page"]]
        [:li [:a {:href "/locales"} "Tor Browser locales monitor"]]
+       [:li [:a {:href "/support-locales"} "Support Portal locales monitor"]]
        [:li [:a {:href "https://arthuredelstein.net/exits"} "Tor Exit DNS Timeouts"]]]]
      [:h3 "Tor Browser Uplift Tracker"]
      [:p "Current tor-browser.git branch: "
