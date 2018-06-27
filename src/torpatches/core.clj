@@ -94,7 +94,8 @@
    or similar."
   [commits]
   (remove #(let [[hash msg] %]
-             (contains-any msg ["r=" "a=" "No bug,"]))
+             (contains-any msg
+                           ["r=" "a=" "No bug," "CLOSED TREE" "Backed out changeset" "1289001) for bustage"]))
           commits))
 
 (defn read-bugs-list
@@ -520,7 +521,7 @@
   (sort (clojure.set/difference
          (set translated)
          (set released)
-         #{"en"} ; redundant
+         #{"en" "sv"} ; redundant
          ;#{"en-GB" "fr-CA" "pt"} ; possibly redundant
          )))
 
