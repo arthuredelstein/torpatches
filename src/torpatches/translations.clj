@@ -77,7 +77,7 @@
        ))
 
 (defn file-locale [file]
-  (-> file .getParentFile .getName))
+  (-> file .getParentFile .getName (.replace "_" "-")))
 
 (defn get-en-file [files]
   (->> files
