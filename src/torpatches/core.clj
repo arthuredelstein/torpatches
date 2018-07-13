@@ -3,7 +3,9 @@
    https://torpat.ch/5856 redirect or link to diff(s) on
    https://gitweb.torproject.org/ ."
   {:author "Arthur Edelstein"}
-  (:require [clojure.java.shell :as shell]
+  (:require [torpatches.translations :as translations]
+            [torpatches.utils :as utils]
+            [clojure.java.shell :as shell]
             [clojure.string :as string]
             [clojure.data.csv :as csv]
             [hiccup.page :as page]
@@ -12,34 +14,10 @@
             [hickory.select]
             [clj-http.client :as client]))
 
-(defn match
-  "Use a regular expression to find the first matching
-   item (use parentheses)."
-  [re s]
-  (some-> (re-find re s) second))
-
-(defn shell-lines
-  "Send the line to the shell, and return a sequence
-   of lines from the resulting process's output."
-  [line & etc]
-  (->> (apply shell/sh
-              (concat (clojure.string/split line #" ")
-                      etc))
-       :out
-       string/split-lines
-       (map string/trim)))
-
 (defn branches
   "List names of git branches."
   [dir]
-  (shell-lines "git branch -a" :dir dir))
-
-(defn fetch-latest-branches!
-  "Download the latest tor-browser branches from git.torproject.org."
-  [repo-dir]
-  (shell-lines "git fetch origin"
-               :dir (.getCanonicalPath
-                     (clojure.java.io/file repo-dir))))
+  (utils/shell-lines "git branch -a" :dir dir))
 
 (defn newest-tor-browser-branch
   "Get the name of the most recent Tor Browser alpha branch.
@@ -56,17 +34,17 @@
 (defn latest-commits
   "Get the latest n patches for the given branch."
   [branch n]
-  (->> (shell-lines (str "git log --oneline "
-                         branch "~" n ".." branch)
-                    :dir "../tor-browser")
+  (->> (utils/shell-lines (str "git log --oneline "
+                               branch "~" n ".." branch)
+                          :dir "../tor-browser")
        (map #(string/split % #"\s" 2))))
 
 (defn bug-number
   "Takes a commit message and extracts the bug number."
   [commit-message]
-  (or (match #"(TB\d+)" commit-message)
-      (match #"[Bb]ug \#?([0-9\.]+)" commit-message)
-      (match #"\#?([0-9]+)" commit-message)
+  (or (utils/match #"(TB\d+)" commit-message)
+      (utils/match #"[Bb]ug \#?([0-9\.]+)" commit-message)
+      (utils/match #"\#?([0-9]+)" commit-message)
       (when (= commit-message "Allow std::unordered_*.") "24197")
       (when (= commit-message "Don't break accessibility support for Windows") "21240")
       (when (= commit-message "Revert \"Getting Tor Browser to build with accessibility enabled on Windows\"") "21240")
@@ -77,7 +55,7 @@
 (defn cleanup-bug-number
   "Takes a bug-number and returns one compatible with trac"
   [bug-number]
-  (match #"^([0-9]+)" bug-number))
+  (utils/match #"^([0-9]+)" bug-number))
 
 (defn patch-url
   "Returns a URL for a tor-browser patch, given the hash."
@@ -449,37 +427,6 @@
      (footer)
      ])))
 
-(def tbb-locale-branches
-  [
-   "tor-launcher-network-settings"
-   "tor-launcher-properties"
-   "tor-launcher-progress"
-   "torbutton-aboutdialogdtd"
-   "torbutton-abouttbupdatedtd"
-   "torbutton-abouttorproperties"
-   "torbutton-branddtd"
-   "torbutton-brandproperties"
- ;  "torbutton-browserproperties"
-   "torbutton-torbuttondtd"
-   "torbutton-torbuttonproperties"
-  ]
-)
-
-(def support-locale-branches
-  [
-   "support-censorship"
-   "support-connecting"
-   "support-faq"
-   "support-gettor"
-   "support-https"
-   "support-miscellaneous"
-   "support-tbb"
-   "support-topics"
-   "support-tormessenger"
-   "support-tormobile"
-  ]
-)
-
 (defn completed-locales-in-branch
   [branch]
   (let [url (str "https://gitweb.torproject.org/translation.git/tree/?h="
@@ -531,7 +478,7 @@
                      (.endsWith s "M") 1048576
                      (.endsWith s "K") 1024
                      :default 1)
-        number-text (match #"([0-9.]+)" s)]
+        number-text (utils/match #"([0-9.]+)" s)]
     (* factor (Double/parseDouble number-text))))
 
 (defn file-sizes [url locale]
@@ -539,7 +486,7 @@
         locale_token (when locale (str "_" locale "."))]
     (->> lines
          (filter #(if locale_token (.contains % locale_token) identity))
-         (map #(match #"\s([0-9.]+[KM]?)\s*?$" %))
+         (map #(utils/match #"\s([0-9.]+[KM]?)\s*?$" %))
          (remove nil?)
          (map parse-file-size)
          sort
@@ -551,7 +498,7 @@
     (->> lines
          (filter #(.contains % "folder.gif"))
 ;         (filter #(.contains % "8.0a"))
-         (map #(match #"href=\"(.*?)\"" %))
+         (map #(utils/match #"href=\"(.*?)\"" %))
          (map #(str home %)))))
 
 (defn disk-space-bytes
@@ -564,22 +511,24 @@
 
 (defn tbb-locale-data
   []
-  (let [translated (completed-locales tbb-locale-branches)
+  (let [translated (completed-locales translations/tbb-locale-branches)
         current (current-tbb-alpha-locales)
         new (tbb-locales-we-can-add translated current)
         gb-total (/ (disk-space-bytes nil) 1073741824)
         gb-single (/ (disk-space-bytes "zh-CN")
                         1073741824)
-        gb-new (* (count new) gb-single)]
+        gb-new (* (count new) gb-single)
+        progress (translations/analyze-translation-completeness translations/tbb-locale-branches)]
     {:translated translated
      :current current
      :new new
      :gb-total gb-total
      :gb-single gb-single
-     :gb-new gb-new}))
+     :gb-new gb-new
+     :progress progress}))
 
 (defn write-tbb-locale-page
-  [{:keys [translated current new gb-total gb-single gb-new]}]
+  [{:keys [translated current new gb-total gb-single gb-new progress]}]
   (spit
    "../../torpat.ch/locales"
    (page/html5
@@ -592,7 +541,7 @@
      [:p (clojure.string/join ", " translated)]
      [:p.label "Tor Browser alphas already deployed:"]
      [:p (clojure.string/join ", " current)]
-     [:p.label "Possible new Tor Browser locales:"]
+     [:p.label "Tor Browser locales 100% translated but not yet deployed:"]
      [:p (clojure.string/join ", " new)]
      [:p.label "Total occuppied Tor Browser disk space:"]
      [:p (format "%.2f" gb-total) " GB"]
@@ -600,11 +549,16 @@
      [:p (format "%.2f" gb-single) " GB"]
      [:p.label "Expected additional disk space for all new locales:"]
      [:p (format "%.2f" gb-new) " GB"]
+     [:p.label "Translation progress (strings localized per locale):"]
+     [:p [:table
+          (for [[locale strings-count] progress]
+            [:tr
+             [:td locale] [:td strings-count]])]]
      (footer)])))
 
 (defn support-locale-data
   []
-  (let [translated (completed-locales support-locale-branches)]
+  (let [translated (completed-locales translations/support-locale-branches)]
     {:translated translated}))
 
 (defn write-support-locale-page
@@ -633,7 +587,7 @@
    https://torpat.ch/#### (where #### is the ticker number) to the patch at
    https://gitweb.torproject.org. For bugs with multiple patches,
    creates a page at https://torpat.ch/#### that links to each of those patches."
-  (fetch-latest-branches! "../tor-browser")
+  (utils/fetch-latest-branches! "../tor-browser")
   (let [branch (newest-tor-browser-branch)
         short-branch (last (.split branch "/"))
         bugs-list (read-bugs-list branch)
