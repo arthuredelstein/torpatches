@@ -18,7 +18,6 @@
    "torbutton-abouttorproperties"
    "torbutton-branddtd"
    "torbutton-brandproperties"
- ;  "torbutton-browserproperties"
    "torbutton-torbuttondtd"
    "torbutton-torbuttonproperties"
   ]
