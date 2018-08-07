@@ -518,17 +518,18 @@
         gb-single (/ (disk-space-bytes "zh-CN")
                         1073741824)
         gb-new (* (count new) gb-single)
-        progress (translations/analyze-translation-completeness translations/tbb-locale-branches)]
+        completeness-data (translations/analyze-translation-completeness translations/tbb-locale-branches)]
     {:translated translated
      :current current
      :new new
      :gb-total gb-total
      :gb-single gb-single
      :gb-new gb-new
-     :progress progress}))
+     :progress (completeness-data :locale-progress)
+     :en-word-count (completeness-data :en-word-count)}))
 
 (defn write-tbb-locale-page
-  [{:keys [translated current new gb-total gb-single gb-new progress]}]
+  [{:keys [translated current new gb-total gb-single gb-new progress en-word-count]}]
   (spit
    "../../torpat.ch/locales"
    (page/html5
@@ -537,28 +538,39 @@
      [:style ".label { font-weight: bold; }"]]
     [:body
      [:h2 "Monitoring Tor Browser locales"]
-     [:p.label "Transifex translations complete:"]
-     [:p (clojure.string/join ", " translated)]
+;     [:p.label "Transifex translations complete:"]
+;     [:p (clojure.string/join ", " translated)]
      [:p.label "Tor Browser alphas already deployed:"]
      [:p (clojure.string/join ", " current)]
-     [:p.label "Tor Browser locales 100% translated but not yet deployed:"]
-     [:p (clojure.string/join ", " new)]
+;     [:p.label "Tor Browser locales 100% translated but not yet deployed:"]
+;     [:p (clojure.string/join ", " new)]
      [:p.label "Total occuppied Tor Browser disk space:"]
      [:p (format "%.2f" gb-total) " GB"]
      [:p.label "Needed disk space for one locale:"]
      [:p (format "%.2f" gb-single) " GB"]
-     [:p.label "Expected additional disk space for all new locales:"]
-     [:p (format "%.2f" gb-new) " GB"]
+;     [:p.label "Expected additional disk space for all new locales:"]
+                                        ;     [:p (format "%.2f" gb-new) " GB"]
+     [:p.label "Number of source words to translate (from en-US):"]
+     [:p (str en-word-count)]
      [:p.label "Translation progress (strings localized per locale):"]
      [:p [:table
-          (for [[locale strings-count] progress]
-            [:tr
-             [:td locale] [:td strings-count]])]]
+          (let [current2 (->> current
+                              (map #(.replace % "-" "_"))
+                              (map #(.replace % "sv_SE" "sv"))
+                              (map #(.replace % "en_US" "en")))]
+            (for [[locale strings-count] progress]
+              [:tr {:style (if ((set current2) locale)
+                             "color: green")}
+               [:td locale]
+               [:td strings-count]]))]]
      (footer)])))
 
 (defn support-locale-data
   []
-  (let [translated (completed-locales translations/support-locale-branches)]
+  (let [translated (->> translations/support-locale-branches
+                        completed-locales
+                        (map #(utils/match #"^contents\+(.+?)\.po$" %))
+                        (remove nil?))]
     {:translated translated}))
 
 (defn write-support-locale-page

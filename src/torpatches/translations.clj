@@ -26,16 +26,7 @@
 
 (def support-locale-branches
   [
-   "support-censorship"
-   "support-connecting"
-   "support-faq"
-   "support-gettor"
-   "support-https"
-   "support-miscellaneous"
-   "support-tbb"
-   "support-topics"
-   "support-tormessenger"
-   "support-tormobile"
+   "support-portal"
   ]
 )
 
@@ -94,6 +85,7 @@
                 (not (string/blank? other-val))
                 (not= en-val other-val)))))))
 
+
 (defn measure-one-branch [name]
   (let [suffix (if (.startsWith name "support")
                  "json"
@@ -112,15 +104,23 @@
                   "properties" parse-properties-file
                   "json" parse-json-file
                   nil)
-          en-map (parse en-file)]
-      (assoc
-       (into {}
-             (for [file files]
-               (do ;(println file)
-                 (let [other-map (parse file)]
-                   [(file-locale file)
-                    (count-localized-strings en-map other-map)]))))
-       "en" (count en-map)))))
+          en-map (parse en-file)
+          en-strings (vals en-map)
+          en-word-count (->> en-strings
+                             (mapcat #(clojure.string/split % #"\\n|\s"))
+                             (remove empty?)
+                             count)]
+      {:en-word-count en-word-count
+       :locale-progress
+       (assoc
+        (into {}
+              (for [file files]
+                (do ;(println file)
+                  (let [other-map (parse file)]
+                    [(file-locale file)
+                     (count-localized-strings en-map other-map)]))))
+        "en" (count en-map))
+       })))
 
 (defn measure-branches [branches]
   (into {}
@@ -128,8 +128,11 @@
           [branch (measure-one-branch branch)])))
 
 (defn analyze-translation-completeness [branches]
-  (let [data (measure-branches branches)]
-    (->> (apply merge-with + (vals data))
-         (sort-by second)
-         reverse)))
+  (let [data (vals (measure-branches branches))]
+    {:locale-progress
+     (->> (apply merge-with + (map :locale-progress data))
+          (sort-by second)
+          reverse)
+     :en-word-count
+     (apply + (map :en-word-count data))}))
 
