@@ -601,10 +601,10 @@
      "../../torpat.ch/support-locales"
      (page/html5
       (html-head
-       "torpat.ch: Support Portal locales"
+       "torpat.ch: Monitoring Tor Support Portal locales"
        "locale.css")
       [:body
-       [:h1 "Monitoring Support Portal locales"]
+       [:h1 "Monitoring Tor Support Portal locales"]
        [:p.label "Translation progress (Tier 1 locales):"]
        (support-portal-table tier-1)
        [:p.label "Translation progress (all locales):"]
