@@ -344,6 +344,14 @@
   [css-file]
   [:style {:type "text/css"} (compress-css (slurp css-file))])
 
+(defn html-head
+  [title css-file]
+  [:head
+   [:title title]
+   [:meta {:charset "utf-8"}]
+   (when css-file
+     (embed-css css-file))])
+
 (defn footer
   "A footer for each page."
   []
@@ -374,7 +382,7 @@
   (spit
    (str "../../torpat.ch/" tag)
    (page/html5
-    [:head [:title title] [:meta {:charset "utf-8"}]]
+    (html-head title nil)
     [:body
      [:h3 title]
      (html-patch-list commits)
@@ -404,10 +412,7 @@
   (spit
    path
    (page/html5
-    [:head
-     [:title "torpat.ch"]
-     [:meta {:charset "utf-8"}]
-     (embed-css "main.css")]
+    (html-head "torpat.ch" "main.css")
     [:body
      [:h3 "torpat.ch"]
      [:div "Useful links:"
@@ -595,11 +600,11 @@
     (spit
      "../../torpat.ch/support-locales"
      (page/html5
-      [:head
-       [:title "torpat.ch: Support Portal locales"]
-       (embed-css "locale.css")]
+      (html-head
+       "torpat.ch: Support Portal locales"
+       "locale.css")
       [:body
-       [:h2 "Monitoring Support Portal locales"]
+       [:h1 "Monitoring Support Portal locales"]
        [:p.label "Translation progress (Tier 1 locales):"]
        (support-portal-table tier-1)
        [:p.label "Translation progress (all locales):"]
