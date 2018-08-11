@@ -4,6 +4,7 @@
    https://gitweb.torproject.org/ ."
   {:author "Arthur Edelstein"}
   (:require [torpatches.translations :as translations]
+            [torpatches.transifex :as transifex]
             [torpatches.utils :as utils]
             [clojure.java.shell :as shell]
             [clojure.string :as string]
@@ -565,33 +566,44 @@
                [:td strings-count]]))]]
      (footer)])))
 
-(defn support-locale-data
-  []
-  (let [translated (->> translations/support-locale-branches
-                        completed-locales
-                        (map #(utils/match #"^contents\+(.+?)\.po$" %))
-                        (remove nil?))]
-    {:translated translated}))
+(defn support-portal-data
+  [stats]
+  (->> (utils/de-key stats :language)
+       (sort-by :language)
+       reverse
+       (sort-by :translated_entities)
+       reverse))
+
+(defn support-portal-table
+  [data]
+  (let [headers [:language :completed :translated_entities :last_commiter :last_update]]
+    (->> data
+         (utils/maps-to-table-rows headers)
+         (utils/table-rows-to-html headers "locale"))))
+
+(def tier-1-languages
+  (set ["en" "fa" "es" "ru" "zh_CN" "pt_BR" "fr" "de" "ko" "tr" "it" "ar"]))
 
 (defn write-support-locale-page
-  [{:keys [translated]}]
-  (spit
-   "../../torpat.ch/support-locales"
-   (page/html5
-    [:head
-     [:title "torpat.ch: Support Portal locales"]
-     [:style ".label { font-weight: bold; }"]]
-    [:body
-     [:h2 "Monitoring Support Portal locales"]
-     [:p.label "Transifex translations complete:"]
-     [:p (clojure.string/join ", " translated)]
-     [:p.label "Locales already deployed:"]
-     [:p "TODO"]
-;     [:p (clojure.string/join ", " current)]
-     [:p.label "Possible new locales:"]
-     [:p "TODO"]
-;     [:p (clojure.string/join ", " new)]
-     (footer)])))
+  [{:keys [stats]}]
+  (let [all (support-portal-data stats)
+        tier-1 (filter #(-> % :language tier-1-languages) all)]
+    (spit
+     "../../torpat.ch/support-locales"
+     (page/html5
+      [:head
+       [:title "torpat.ch: Support Portal locales"]
+       [:style "table.locale tr:nth-child(odd) {background-color: #ddd;} table.locale { text-align: left; border-spacing: 0px; } table.locale tr th { background-color: #bbb; padding-right: 10px; } table.locale tr td { padding-right: 10px;} .label { font-weight: bold; font-size: larger;}"]]
+      [:body
+       [:h2 "Monitoring Support Portal locales"]
+       [:p.label "Translation progress (Tier 1 locales):"]
+       (support-portal-table tier-1)
+       [:p.label "Translation progress (all locales):"]
+       (support-portal-table all)
+       [:p.label "Locales already deployed:"]
+       [:p "TODO"]
+                                        ;     [:p (clojure.string/join ", " current)]
+       (footer)]))))
 
 (defn -main [& args]
   "The main program. Works out the Tor Browser trac ticket number for each
@@ -617,5 +629,5 @@
     (println "Wrote short.")
     (write-tbb-locale-page (tbb-locale-data))
     (println "Wrote TBB locales page.")
-    (write-support-locale-page (support-locale-data))
+    (write-support-locale-page {:stats (transifex/statistics "support-portal")})
     (println "Wrote support locales page.")))
