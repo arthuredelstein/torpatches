@@ -470,7 +470,10 @@
    :body
    (re-seq #"tor-browser-linux64.*?a.*?_(.*?)\.tar.xz[^.]")
    (map second)
-   (map #(.replace % "es-ES" "es")) ; bit of a hack; oh well
+   (map #(.replace % "-" "_"))
+   (map #(.replace % "es_ES" "es"))
+   (map #(.replace % "en_US" "en"))
+   (map #(.replace % "sv_SE" "sv"))
    sort))
 
 (defn tbb-locales-we-can-add
@@ -521,58 +524,48 @@
 
 (defn tbb-locale-data
   []
-  (let [translated (completed-locales translations/tbb-locale-branches)
-        current (current-tbb-alpha-locales)
-        new (tbb-locales-we-can-add translated current)
+  (let [current (current-tbb-alpha-locales)
         gb-total (/ (disk-space-bytes nil) 1073741824)
         gb-single (/ (disk-space-bytes "zh-CN")
                         1073741824)
-        gb-new (* (count new) gb-single)
-        completeness-data (translations/analyze-translation-completeness translations/tbb-locale-branches)]
-    {:translated translated
-     :current current
-     :new new
+        progress (translations/analyze-translation-completeness)
+        progress+ (for [row progress]
+                    (assoc row :deployed
+                           (if ((set current) (:locale row))
+                             "yes" "no")))]
+    {:current current
      :gb-total gb-total
      :gb-single gb-single
-     :gb-new gb-new
-     :progress (completeness-data :locale-progress)
-     :en-word-count (completeness-data :en-word-count)}))
+     :progress progress+}))
+
+(defn tbb-locale-table
+  [data]
+  (let [headers [:locale :deployed :translated_entities :untranslated_entities :reviewed :translated_words :untranslated_words]]
+    (->> data
+         (sort-by :locale)
+         reverse
+         (sort-by :deployed)
+         (sort-by :translated_entities)
+         reverse
+         (utils/maps-to-table-rows headers)
+         (utils/table-rows-to-html headers "locale"))))
 
 (defn write-tbb-locale-page
-  [{:keys [translated current new gb-total gb-single gb-new progress en-word-count]}]
+  [{:keys [translated current new gb-total gb-single gb-new progress]}]
   (spit
    "../../torpat.ch/locales"
    (page/html5
-    [:head
-     [:title "torpat.ch: Tor Browser locales"]
-     [:style ".label { font-weight: bold; }"]]
+    (html-head "torpat.ch: Tor Browser locales" "locale.css")
     [:body
      [:h2 "Monitoring Tor Browser locales"]
-;     [:p.label "Transifex translations complete:"]
-;     [:p (clojure.string/join ", " translated)]
      [:p.label "Tor Browser alphas already deployed:"]
      [:p (clojure.string/join ", " current)]
-;     [:p.label "Tor Browser locales 100% translated but not yet deployed:"]
-;     [:p (clojure.string/join ", " new)]
      [:p.label "Total occuppied Tor Browser disk space:"]
      [:p (format "%.2f" gb-total) " GB"]
      [:p.label "Needed disk space for one locale:"]
      [:p (format "%.2f" gb-single) " GB"]
-;     [:p.label "Expected additional disk space for all new locales:"]
-                                        ;     [:p (format "%.2f" gb-new) " GB"]
-     [:p.label "Number of source words to translate (from en-US):"]
-     [:p (str en-word-count)]
-     [:p.label "Translation progress (strings localized per locale):"]
-     [:p [:table
-          (let [current2 (->> current
-                              (map #(.replace % "-" "_"))
-                              (map #(.replace % "sv_SE" "sv"))
-                              (map #(.replace % "en_US" "en")))]
-            (for [[locale strings-count] progress]
-              [:tr {:style (if ((set current2) locale)
-                             "color: green")}
-               [:td locale]
-               [:td strings-count]]))]]
+     [:p.label "Translation progress:"]
+     [:p (tbb-locale-table progress)]
      (footer)])))
 
 (defn support-portal-data
