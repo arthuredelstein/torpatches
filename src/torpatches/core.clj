@@ -593,7 +593,7 @@
      (page/html5
       [:head
        [:title "torpat.ch: Support Portal locales"]
-       [:style "table.locale tr:nth-child(odd) {background-color: #ddd;} table.locale { text-align: left; border-spacing: 0px; } table.locale tr th { background-color: #bbb; padding-right: 10px; } table.locale tr td { padding-right: 10px;} .label { font-weight: bold; font-size: larger;}"]]
+       [:style "table.locale tr:nth-child(odd) {background-color: #ddd;} table.locale { text-align: left; border-spacing: 0px; } table.locale tr th { background-color: #bbb; padding: 2px 10px;} table.locale tr td { padding: 2px 10px; } .label { font-weight: bold; font-size: larger;}"]]
       [:body
        [:h2 "Monitoring Support Portal locales"]
        [:p.label "Translation progress (Tier 1 locales):"]
