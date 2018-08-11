@@ -340,6 +340,10 @@
   [css-string]
   (clojure.string/replace css-string #"\s+" " "))
 
+(defn embed-css
+  [css-file]
+  [:style {:type "text/css"} (compress-css (slurp css-file))])
+
 (defn footer
   "A footer for each page."
   []
@@ -403,7 +407,7 @@
     [:head
      [:title "torpat.ch"]
      [:meta {:charset "utf-8"}]
-     [:style {:type "text/css"} (compress-css (slurp "main.css"))]]
+     (embed-css "main.css")]
     [:body
      [:h3 "torpat.ch"]
      [:div "Useful links:"
@@ -593,7 +597,7 @@
      (page/html5
       [:head
        [:title "torpat.ch: Support Portal locales"]
-       [:style "table.locale tr:nth-child(odd) {background-color: #ddd;} table.locale { text-align: left; border-spacing: 0px; } table.locale tr th { background-color: #bbb; padding: 2px 10px;} table.locale tr td { padding: 2px 10px; } .label { font-weight: bold; font-size: larger;}"]]
+       (embed-css "locale.css")]
       [:body
        [:h2 "Monitoring Support Portal locales"]
        [:p.label "Translation progress (Tier 1 locales):"]
