@@ -533,7 +533,8 @@
                     (assoc row :deployed
                            (if ((set current) (:locale row))
                              "yes" "no")))]
-    {:current current
+    {:resources translations/tbb-locale-resources
+     :current current
      :gb-total gb-total
      :gb-single gb-single
      :progress progress+}))
@@ -551,7 +552,7 @@
          (utils/table-rows-to-html headers "locale"))))
 
 (defn write-tbb-locale-page
-  [{:keys [translated current new gb-total gb-single gb-new progress]}]
+  [{:keys [translated current new gb-total gb-single gb-new progress resources]}]
   (spit
    "../../torpat.ch/locales"
    (page/html5
@@ -564,6 +565,8 @@
      [:p (format "%.2f" gb-total) " GB"]
      [:p.label "Needed disk space for one locale:"]
      [:p (format "%.2f" gb-single) " GB"]
+     [:p.label "String files required for Tor Browser:"]
+     [:p (interpose [:br] resources)]
      [:p.label "Translation progress:"]
      [:p (tbb-locale-table progress)]
      (footer)])))
