@@ -585,7 +585,7 @@
 
 (defn support-portal-table
   [data]
-  (let [headers [:language :completed :translated_entities :last_commiter :last_update]]
+  (let [headers [:language :completed :translated_entities :reviewed_percentage :last_commiter :last_update]]
     (->> data
          (utils/maps-to-table-rows headers)
          (utils/table-rows-to-html headers "locale"))))
