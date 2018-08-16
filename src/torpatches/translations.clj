@@ -8,6 +8,7 @@
 (def tbb-locale-resources
   [
    "abouttor-homepage"
+   "browseronboardingproperties"
    "tor-launcher-network-settingsdtd"
    "tor-launcher-properties"
    "torbutton-aboutdialogdtd"
