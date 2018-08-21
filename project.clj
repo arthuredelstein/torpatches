@@ -6,7 +6,7 @@
   :dependencies [[org.clojure/clojure "1.7.0"]
                  [org.clojure/data.csv "0.1.3"]
                  [org.clojure/data.xml "0.0.8"]
-                 [hickory "0.7.1"]
+                 [reaver "0.1.2"]
                  [hiccup "1.0.5"]
                  [clj-http "2.2.0"]
                  [cheshire "5.6.3"]])

@@ -11,8 +11,7 @@
             [clojure.data.csv :as csv]
             [hiccup.page :as page]
             [hiccup.util]
-            [hickory.core :as hickory]
-            [hickory.select]
+            [reaver]
             [clj-http.client :as client]))
 
 (defn branches
@@ -463,6 +462,43 @@
    sort
    (map #(string/replace % "_" "-"))))
 
+(defn normalize-locale [locale]
+  (let [locale2 (.replace locale "-" "_")]
+    (get {
+          "en_US" "en"
+          "es_ES" "es"
+          "fy_NL" "fy"
+          "ga_IE" "ga"
+          "gu_IN" "gu"
+          "hi_IN" "hi"
+          "hr_HR" "hr"
+          "hy_AM" "hy"
+          "ko_KR" "ko"
+          "ms_MY" "ms"
+          "ne_NP" "ne"
+          "nn_NO" "nn"
+          "nb_NO" "nb"
+          "pa_IN" "pa"
+          "pt_PT" "pt"
+          "si_LK" "si"
+          "sk_SK" "sk"
+          "sl_SI" "sl"
+          "sv_SE" "sv"
+          "ur_PK" "ur"
+          }
+         locale2 locale2)))
+
+(defn firefox-locales
+  "Gets a list of deployed Firefox locales from Mozilla."
+  []
+  (let [url "https://www.mozilla.org/en-US/firefox/all/"]
+    (->> url client/get :body
+         (re-seq #"lang\=\"(.+?)\"")
+         (map second)
+         (map normalize-locale)
+         set
+         sort)))
+
 (defn current-tbb-alpha-locales
   []
   (->>
@@ -470,10 +506,7 @@
    :body
    (re-seq #"tor-browser-linux64.*?a.*?_(.*?)\.tar.xz[^.]")
    (map second)
-   (map #(.replace % "-" "_"))
-   (map #(.replace % "es_ES" "es"))
-   (map #(.replace % "en_US" "en"))
-   (map #(.replace % "sv_SE" "sv"))
+   (map normalize-locale)
    sort))
 
 (defn tbb-locales-we-can-add
@@ -522,17 +555,38 @@
         sizes (map #(file-sizes % locale) pages)]
     (->> sizes (apply concat) (apply +))))
 
+(defn locale-names []
+  (let [page (slurp "https://ss64.com/locale.html")
+        data (reaver/extract-from
+              (reaver/parse page) "#localetbl tr"
+              [:item]
+              "td" reaver/text)]
+    (->> data
+         (map :item)
+         (map #(vector (second %)
+                       (first %)))
+         (into {}))))
+
 (defn tbb-locale-data
   []
-  (let [current (current-tbb-alpha-locales)
+  (let [locale-names (locale-names)
+        current (current-tbb-alpha-locales)
+        firefox (firefox-locales)
         gb-total (/ (disk-space-bytes nil) 1073741824)
         gb-single (/ (disk-space-bytes "zh-CN")
                         1073741824)
         progress (translations/analyze-translation-completeness)
         progress+ (for [row progress]
-                    (assoc row :deployed
-                           (if ((set current) (:locale row))
-                             "yes" "no")))]
+                    (let [locale (.replace (normalize-locale (:locale row)) "_" "-")]
+                      (-> row
+                          (assoc :locale_name
+                                 (locale-names locale))
+                          (assoc :firefox
+                                 (if ((set firefox) locale)
+                                   "yes" "no"))
+                          (assoc :tbb_deployed
+                                 (if ((set current) locale)
+                                   "yes" "no")))))]
     {:resources translations/tbb-locale-resources
      :current current
      :gb-total gb-total
@@ -541,7 +595,7 @@
 
 (defn tbb-locale-table
   [data]
-  (let [headers [:locale :deployed :translated_entities :untranslated_entities :reviewed :translated_words :untranslated_words]]
+  (let [headers [:locale :locale_name :tbb_deployed :firefox :translated_entities :untranslated_entities :reviewed :translated_words :untranslated_words]]
     (->> data
          (sort-by :locale)
          reverse
