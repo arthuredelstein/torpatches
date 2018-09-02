@@ -463,30 +463,31 @@
    (map #(string/replace % "_" "-"))))
 
 (defn normalize-locale [locale]
-  (let [locale2 (.replace locale "-" "_")]
-    (get {
-          "en_US" "en"
-          "es_ES" "es"
-          "fy_NL" "fy"
-          "ga_IE" "ga"
-          "gu_IN" "gu"
-          "hi_IN" "hi"
-          "hr_HR" "hr"
-          "hy_AM" "hy"
-          "ko_KR" "ko"
-          "ms_MY" "ms"
-          "ne_NP" "ne"
-          "nn_NO" "nn"
-          "nb_NO" "nb"
-          "pa_IN" "pa"
-          "pt_PT" "pt"
-          "si_LK" "si"
-          "sk_SK" "sk"
-          "sl_SI" "sl"
-          "sv_SE" "sv"
-          "ur_PK" "ur"
-          }
-         locale2 locale2)))
+  (when locale
+    (let [locale2 (.replace locale "-" "_")]
+      (get {
+            "en_US" "en"
+            "es_ES" "es"
+            "fy_NL" "fy"
+            "ga_IE" "ga"
+            "gu_IN" "gu"
+            "hi_IN" "hi"
+            "hr_HR" "hr"
+            "hy_AM" "hy"
+            "ko_KR" "ko"
+            "ms_MY" "ms"
+            "ne_NP" "ne"
+            "nn_NO" "nn"
+            "nb_NO" "nb"
+            "pa_IN" "pa"
+            "pt_PT" "pt"
+            "si_LK" "si"
+            "sk_SK" "sk"
+            "sl_SI" "sl"
+            "sv_SE" "sv"
+            "ur_PK" "ur"
+            }
+           locale2 locale2))))
 
 (defn firefox-locales
   "Gets a list of deployed Firefox locales from Mozilla."
@@ -506,7 +507,6 @@
    :body
    (re-seq #"tor-browser-linux64.*?a.*?_(.*?)\.tar.xz[^.]")
    (map second)
-   (map normalize-locale)
    sort))
 
 (defn tbb-locales-we-can-add
@@ -563,7 +563,7 @@
               "td" reaver/text)]
     (->> data
          (map :item)
-         (map #(vector (second %)
+         (map #(vector (normalize-locale (second %))
                        (first %)))
          (into {}))))
 
@@ -571,13 +571,13 @@
   []
   (let [locale-names (locale-names)
         current (current-tbb-alpha-locales)
-        firefox (firefox-locales)
+        firefox (map normalize-locale (firefox-locales))
         gb-total (/ (disk-space-bytes nil) 1073741824)
         gb-single (/ (disk-space-bytes "zh-CN")
                         1073741824)
         progress (translations/analyze-translation-completeness)
         progress+ (for [row progress]
-                    (let [locale (.replace (normalize-locale (:locale row)) "_" "-")]
+                    (let [locale (normalize-locale (:locale row))]
                       (-> row
                           (assoc :locale_name
                                  (locale-names locale))
@@ -585,7 +585,7 @@
                                  (if ((set firefox) locale)
                                    "yes" "no"))
                           (assoc :tbb_deployed
-                                 (if ((set current) locale)
+                                 (if ((set (map normalize-locale current)) locale)
                                    "yes" "no")))))]
     {:resources translations/tbb-locale-resources
      :current current

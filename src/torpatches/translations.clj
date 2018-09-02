@@ -13,7 +13,6 @@
    "tor-launcher-properties"
    "torbutton-aboutdialogdtd"
    "torbutton-abouttbupdatedtd"
-   "torbutton-abouttorproperties"
    "torbutton-branddtd"
    "torbutton-brandproperties"
    "torbutton-torbuttondtd"
