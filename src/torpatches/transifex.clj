@@ -29,5 +29,11 @@
 
 (defn statistics
   "Get statistics on a transifex resource."
-  [resource]
-  (request (str "https://www.transifex.com/api/2/project/torproject/resource/" resource "/stats/")))
+  [project resource]
+  (request (str "https://www.transifex.com/api/2/project/" project "/resource/" resource "/stats/")))
+
+(defn report
+  "Get report on translation activity."
+  [project]
+  (request (str "https://api.transifex.com/organizations/otf/reports/activity/?from_date=2017-01-01&to_date=2017-12-31&project_slug=" project)))
+

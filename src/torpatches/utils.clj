@@ -48,7 +48,7 @@
 (defn table-rows-to-html
   [header-items class-name rows]
   [:table {:class class-name}
-   [:tr
+   [:tr.header
     (for [header-item header-items]
       [:th (name header-item)])]
    (for [row rows]

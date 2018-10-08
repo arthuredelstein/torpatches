@@ -6,6 +6,7 @@ table.uplift {
 }
 table.uplift p { margin: 0px; }
 table.uplift tr { margin: 3px; }
+table.uplift tr.header { position: sticky; top: 0px; }
 table.uplift td { padding: 3px; }
 table.uplift td { vertical-align: top; }
 table.uplift td.id { width: 5em; }

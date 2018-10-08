@@ -426,6 +426,7 @@
        [:li [:a {:href "https://wiki.mozilla.org/Security/Fusion"} "Mozilla's Fusion page"]]
        [:li [:a {:href "/locales"} "Tor Browser locales monitor"]]
        [:li [:a {:href "/support-locales"} "Support Portal locales monitor"]]
+       [:li [:a {:href "/manual-locales"} "Tor Browser User Manual locales monitor"]]
        [:li [:a {:href "https://arthuredelstein.net/exits"} "Tor Exit DNS Timeouts"]]]]
      [:h3 "Tor Browser Uplift Tracker"]
      [:p "Current tor-browser.git branch: "
@@ -625,7 +626,7 @@
      [:p (tbb-locale-table progress)]
      (footer)])))
 
-(defn support-portal-data
+(defn web-portal-data
   [stats]
   (->> (utils/de-key stats :language)
        (sort-by :language)
@@ -633,7 +634,7 @@
        (sort-by :translated_entities)
        reverse))
 
-(defn support-portal-table
+(defn web-portal-table
   [data]
   (let [headers [:language :completed :translated_entities :reviewed_percentage :last_commiter :last_update]]
     (->> data
@@ -643,25 +644,22 @@
 (def tier-1-languages
   (set ["en" "fa" "es" "ru" "zh_CN" "pt_BR" "fr" "de" "ko" "tr" "it" "ar"]))
 
-(defn write-support-locale-page
-  [{:keys [stats]}]
-  (let [all (support-portal-data stats)
+(defn write-web-portal-locale-page
+  [{:keys [stats name path]}]
+  (let [all (web-portal-data stats)
         tier-1 (filter #(-> % :language tier-1-languages) all)]
     (spit
-     "../../torpat.ch/support-locales"
+     path
      (page/html5
       (html-head
-       "torpat.ch: Monitoring Tor Support Portal locales"
+       (str "torpat.ch: Monitoring " name " locales")
        "locale.css")
       [:body
-       [:h1 "Monitoring Tor Support Portal locales"]
+       [:h1 (str "Monitoring " name " locales")]
        [:p.label "Translation progress (Tier 1 locales):"]
-       (support-portal-table tier-1)
+       (web-portal-table tier-1)
        [:p.label "Translation progress (all locales):"]
-       (support-portal-table all)
-       [:p.label "Locales already deployed:"]
-       [:p "TODO"]
-                                        ;     [:p (clojure.string/join ", " current)]
+       (web-portal-table all)
        (footer)]))))
 
 (defn -main [& args]
@@ -688,5 +686,12 @@
     (println "Wrote short.")
     (write-tbb-locale-page (tbb-locale-data))
     (println "Wrote TBB locales page.")
-    (write-support-locale-page {:stats (transifex/statistics "support-portal")})
-    (println "Wrote support locales page.")))
+    (write-web-portal-locale-page
+     {:path "../../torpat.ch/support-locales"
+      :name "Tor Support Portal"
+      :stats (transifex/statistics "tor-project-support-community-portal" "support-portal")})
+    (write-web-portal-locale-page
+     {:path "../../torpat.ch/manual-locales"
+      :name "Tor Browser User Manual"
+      :stats (transifex/statistics "torproject" "tor-misc-tor-browser-manualpot")})
+    (println "Wrote portal locales pages.")))
