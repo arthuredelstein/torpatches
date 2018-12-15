@@ -9,6 +9,7 @@
   [
    "abouttor-homepage"
    "browseronboardingproperties"
+   "tba-torbrowserstringsdtd"
    "tor-launcher-network-settingsdtd"
    "tor-launcher-properties"
    "torbutton-aboutdialogdtd"
@@ -27,7 +28,7 @@
 (defn analyze-translation-completeness
   "Figure out statistics per locale for TBB"
   []
-  (let [raw-data (map transifex/statistics "torproject" tbb-locale-resources)
+  (let [raw-data (map #(transifex/statistics "torproject" %) tbb-locale-resources)
         locales (->> raw-data
                      (map keys)
                      (map set)

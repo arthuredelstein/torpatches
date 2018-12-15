@@ -140,8 +140,9 @@
 (defn fetch-mozilla-bugs
   "Retrieve whiteboard:[tor bugs from bugzilla.mozilla.org REST API"
   []
-  (-> (client/get "https://bugzilla.mozilla.org/rest/bug?include_fields=id,whiteboard,summary,status,resolution,priority&f1=status_whiteboard&f2=short_desc&j_top=OR&o1=anywordssubstr&o2=anywordssubstr&v1=[tor&v2=[tor (tor [Tor (Tor"
-                  {:accept :json :as :json})
+  (-> (client/get
+       "https://bugzilla.mozilla.org/rest/bug?include_fields=id,whiteboard,summary,status,resolution,priority&f1=status_whiteboard&f2=short_desc&j_top=OR&o1=anywordssubstr&o2=anywordssubstr&v1=[tor&v2=[tor (tor [Tor (Tor"
+       {:accept :json :as :json})
       :body :bugs))
 
 (defn tor-bug-ids-from-mozilla-bug
