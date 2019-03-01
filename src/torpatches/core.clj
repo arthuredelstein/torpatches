@@ -9,10 +9,19 @@
             [clojure.java.shell :as shell]
             [clojure.string :as string]
             [clojure.data.csv :as csv]
+            [clojure.data.json :as json]
             [hiccup.page :as page]
             [hiccup.util]
             [reaver]
             [clj-http.client :as client]))
+
+(defn curl
+  [url]
+  (-> (shell/sh "/usr/bin/curl" url) :out))
+
+(defn curl-json
+  [url]
+  (-> url curl (json/read-str :key-fn keyword)))
 
 (defn branches
   "List names of git branches."
@@ -113,11 +122,9 @@
 (defn fetch-mozilla-attachments
   [bug-id]
   (try
-    (-> (client/get (str "https://bugzilla.mozilla.org/rest/bug/"
-                         bug-id
-                         "/attachment")
-                    {:accept :json :as :json})
-        :body
+    (-> (curl-json (str "https://bugzilla.mozilla.org/rest/bug/"
+                        bug-id
+                        "/attachment"))
         :bugs
         (get (keyword (str bug-id))))
     (catch Exception e nil)))
@@ -140,10 +147,9 @@
 (defn fetch-mozilla-bugs
   "Retrieve whiteboard:[tor bugs from bugzilla.mozilla.org REST API"
   []
-  (-> (client/get
-       "https://bugzilla.mozilla.org/rest/bug?include_fields=id,whiteboard,summary,status,resolution,priority&f1=status_whiteboard&f2=short_desc&j_top=OR&o1=anywordssubstr&o2=anywordssubstr&v1=[tor&v2=[tor (tor [Tor (Tor"
-       {:accept :json :as :json})
-      :body :bugs))
+  (-> (curl-json
+       "https://bugzilla.mozilla.org/rest/bug?include_fields=id,whiteboard,summary,status,resolution,priority&f1=status_whiteboard&f2=short_desc&j_top=OR&o1=anywordssubstr&o2=anywordssubstr&v1=%5Btor&v2=%5Btor%20(tor%20%5BTor%20(Tor")
+      (get :bugs)))
 
 (defn tor-bug-ids-from-mozilla-bug
   "Some bugzilla bugs have one or more Tor ticket labels in the summary or whiteboard.
