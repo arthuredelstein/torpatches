@@ -700,5 +700,5 @@
     (write-web-portal-locale-page
      {:path "../../torpat.ch/manual-locales"
       :name "Tor Browser User Manual"
-      :stats (transifex/statistics "torproject" "tor-misc-tor-browser-manualpot")})
+      :stats (transifex/statistics "tor-project-support-community-portal" "tbmanual-contentspot")})
     (println "Wrote portal locales pages.")))
