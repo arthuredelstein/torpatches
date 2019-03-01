@@ -474,6 +474,8 @@
   (when locale
     (let [locale2 (.replace locale "-" "_")]
       (get {
+            "bn_BD" "bn"
+            "bn_IN" "bn"
             "en_US" "en"
             "es_ES" "es"
             "fy_NL" "fy"
@@ -484,9 +486,9 @@
             "hy_AM" "hy"
             "ko_KR" "ko"
             "ms_MY" "ms"
+            "nb_NO" "nb"
             "ne_NP" "ne"
             "nn_NO" "nn"
-            "nb_NO" "nb"
             "pa_IN" "pa"
             "pt_PT" "pt"
             "si_LK" "si"
