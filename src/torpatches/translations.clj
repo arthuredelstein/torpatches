@@ -18,6 +18,7 @@
    "torbutton-brandproperties"
    "torbutton-torbuttondtd"
    "torbutton-torbuttonproperties"
+   "torbutton-securitylevelproperties"
    ])
 
 (def counting-keys
