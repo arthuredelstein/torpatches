@@ -513,7 +513,7 @@
 (defn current-tbb-alpha-locales
   []
   (->>
-   (client/get "https://www.torproject.org/projects/torbrowser.html.en")
+   (client/get "https://www.torproject.org/download/alpha/")
    :body
    (re-seq #"tor-browser-linux64.*?a.*?_(.*?)\.tar.xz[^.]")
    (map second)
