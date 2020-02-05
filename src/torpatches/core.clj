@@ -433,6 +433,7 @@
        [:li [:a {:href "https://wiki.mozilla.org/Security/Fusion"} "Mozilla's Fusion page"]]
        [:li [:a {:href "/locales"} "Tor Browser locales monitor"]]
        [:li [:a {:href "/support-locales"} "Support Portal locales monitor"]]
+       [:li [:a {:href "/community-locales"} "Community Portal locales monitor"]]
        [:li [:a {:href "/manual-locales"} "Tor Browser User Manual locales monitor"]]
        [:li [:a {:href "https://arthuredelstein.net/exits"} "Tor Exit DNS Timeouts"]]]]
      [:h3 "Tor Browser Uplift Tracker"]
@@ -703,4 +704,8 @@
      {:path "../../torpat.ch/manual-locales"
       :name "Tor Browser User Manual"
       :stats (transifex/statistics "tor-project-support-community-portal" "tbmanual-contentspot")})
+    (write-web-portal-locale-page
+     {:path "../../torpat.ch/community-locales"
+      :name "Tor Community Portal"
+      :stats (transifex/statistics "tor-project-support-community-portal" "communitytpo-contentspot")})
     (println "Wrote portal locales pages.")))
