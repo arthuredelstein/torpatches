@@ -198,9 +198,12 @@
      ;   bugzilla2 bugzilla
 ;        bugzilla2 (pmap #(elucidate % :id fetch-hg-commits :hg) bugzilla)
         id-clean (cleanup-bug-number id)
-        trac (trac-data id-clean)
-        trac2 (elucidate trac "keywords" extract-keywords "keywords")]
-    {:hash hash :title title :id id :bugzilla bugzilla2 :trac trac2}))
+;        trac (trac-data id-clean)
+;        trac2 (elucidate trac "keywords" extract-keywords "keywords")
+        ]
+        {:hash hash :title title :id id :bugzilla bugzilla2
+         ;:trac trac2
+         }))
 
 (defn uplift-data
   "Retrieves the full uplift table data given a list of tor patches."
@@ -208,9 +211,10 @@
   (let [mozilla-bugs (fetch-mozilla-bugs)
         mozilla-bug-map (mozilla-bugs-by-tor-id mozilla-bugs)
         ids (map (comp cleanup-bug-number bug-number second) tor-bugs-list)
-        trac-data (fetch-trac-data ids)]
+                                        ;trac-data (fetch-trac-data ids)
+        ]
     (for [tor-bug tor-bugs-list]
-      (assemble-data-for-tor-commit tor-bug mozilla-bug-map trac-data))))
+      (assemble-data-for-tor-commit tor-bug mozilla-bug-map nil)))); trac-data))))
 
 (defn hg-patch-list-html
   "Generates some HTML to present a list of Mozilla mercurical patches
