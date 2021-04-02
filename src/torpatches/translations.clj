@@ -9,7 +9,7 @@
   [
    "abouttor-homepage"
    "browseronboardingproperties"
-   "tba-torbrowserstringsdtd"
+   "tor-browser-android-strings"
    "tor-launcher-network-settingsdtd"
    "tor-launcher-properties"
    "torbutton-aboutdialogdtd"
