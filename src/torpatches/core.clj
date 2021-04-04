@@ -6,6 +6,7 @@
   (:require [torpatches.translations :as translations]
             [torpatches.transifex :as transifex]
             [torpatches.utils :as utils]
+            [torpatches.html :as html]
             [clojure.java.shell :as shell]
             [clojure.string :as string]
             [clojure.data.csv :as csv]
@@ -339,36 +340,6 @@
   [[trac-ticket [[hash _]]]]
   (str "location /" trac-ticket " { rewrite ^ " (patch-url hash) "; }\n"))
 
-(defn now-string
-  "Returns the current date-time in UTC as a reasonably readable string."
-  []
-  (let [date-format (java.text.SimpleDateFormat. "yyyy-MMM-dd HH:mm 'UTC'")]
-    (.setTimeZone date-format (java.util.TimeZone/getTimeZone "UTC"))
-    (.format date-format (java.util.Date.))))
-
-(defn compress-css
-  [css-string]
-  (clojure.string/replace css-string #"\s+" " "))
-
-(defn embed-css
-  [css-file]
-  [:style {:type "text/css"} (compress-css (slurp css-file))])
-
-(defn html-head
-  [title css-file]
-  [:head
-   [:title title]
-   [:meta {:charset "utf-8"}]
-   (when css-file
-     (embed-css css-file))])
-
-(defn footer
-  "A footer for each page."
-  []
-  [:p [:span {:style "font-style: italic"} "Last update: " (now-string) " "]
-   [:span [:a {:href "https://github.com/arthuredelstein/torpatches"}
-           "(Source on github)"]]])
-
 (defn write-redirect-file
   "Create a redirect file from the single-patch bugs map."
   [single-patch-bugs]
@@ -392,11 +363,11 @@
   (spit
    (str "../../torpat.ch/" tag)
    (page/html5
-    (html-head title nil)
+    (html/head title nil)
     [:body
      [:h3 title]
      (html-patch-list commits)
-     (footer)])))
+     (html/footer)])))
 
 (defn write-indirect-page
   "Create an HTML page that displays a list of links to patches
@@ -422,7 +393,7 @@
   (spit
    path
    (page/html5
-    (html-head "torpat.ch" "main.css")
+    (html/head "torpat.ch" "main.css")
     [:body
      [:h3 "torpat.ch"]
      [:div "Useful links:"
@@ -446,7 +417,7 @@
                       branch)} branch]]
      legend-table
      uplift-table
-     (footer)
+     (html/footer)
      ])))
 
 (defn completed-locales-in-branch
@@ -625,7 +596,7 @@
   (spit
    "../../torpat.ch/locales"
    (page/html5
-    (html-head "torpat.ch: Tor Browser locales" "locale.css")
+    (html/head "torpat.ch: Tor Browser locales" "locale.css")
     [:body
      [:h2 "Monitoring Tor Browser locales"]
      [:p.label "Tor Browser alphas already deployed:"]
@@ -638,7 +609,7 @@
      [:p (interpose [:br] resources)]
      [:p.label "Translation progress:"]
      [:p (tbb-locale-table progress)]
-     (footer)])))
+     (html/footer)])))
 
 (defn web-portal-data
   [stats]
@@ -665,7 +636,7 @@
     (spit
      path
      (page/html5
-      (html-head
+      (html/head
        (str "torpat.ch: Monitoring " name " locales")
        "locale.css")
       [:body
@@ -674,7 +645,7 @@
        (web-portal-table tier-1)
        [:p.label "Translation progress (all locales):"]
        (web-portal-table all)
-       (footer)]))))
+       (html/footer)]))))
 
 (defn -main [& args]
   "The main program. Works out the Tor Browser trac ticket number for each
