@@ -4,6 +4,7 @@
   (:require
    [clojure.string :as string]
    [clj-http.headers :as headers]
+   [clojure.data.json :as json]
    [clojure.java.shell :as shell]))
 
 (defn match
@@ -11,6 +12,11 @@
    item (use parentheses)."
   [re s]
   (some-> (re-find re s) second))
+
+(defn contains-any
+  "Returns first item in fragments can that be found in string."
+  [string fragments]
+  (some #(.contains string %) fragments))
 
 (defn shell-lines
   "Send the line to the shell, and return a sequence
@@ -29,6 +35,19 @@
   (shell-lines "git fetch origin"
                :dir (.getCanonicalPath
                      (clojure.java.io/file repo-dir))))
+
+(defn branches
+  "List names of git branches."
+  [dir]
+  (shell-lines "git branch -a" :dir dir))
+
+(defn latest-commits
+  "Get the latest n patches for the given git branch."
+  [dir branch n]
+  (->> (shell-lines (str "git log --oneline "
+                               branch "~" n ".." branch)
+                          :dir dir)
+       (map #(string/split % #"\s" 2))))
 
 (defn de-key
   "Flattens a map of maps, so the outer map's keys
@@ -55,3 +74,25 @@
      [:tr
       (for [item row]
         [:td item])])])
+
+(defn curl
+  [url]
+  (-> (shell/sh "/usr/bin/curl" url) :out))
+
+(defn curl-json
+  [url]
+  (-> url curl (json/read-str :key-fn keyword)))
+
+(defn elucidate
+  "Get the value from data-map at key, applies (fetch-fn key) and inserts the
+   return value back into data-map at name."
+  [data-map key fetch-fn name]
+  (assoc data-map name (fetch-fn (get data-map key))))
+
+(defn separate
+  "Returns [coll-true coll-false], where coll-true is every
+   member of coll that is true, and coll-false is every
+   member of coll that is false."
+  [pred coll]
+  [(filter pred coll)
+   (remove pred coll)])
