@@ -228,7 +228,7 @@
      [:h2 "Monitoring Tor Browser locales"]
      [:p.label "Tor Browser alphas already deployed:"]
      [:p (clojure.string/join ", " current)]
-     [:p.label "Total occuppied Tor Browser disk space:"]
+     [:p.label "Total occupied Tor Browser disk space:"]
      [:p (format "%.2f" gb-total) " GB"]
      [:p.label "Needed disk space for one locale:"]
      [:p (format "%.2f" gb-single) " GB"]
