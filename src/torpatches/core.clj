@@ -48,6 +48,7 @@
        [:li [:a {:href "/locales"} "Tor Browser locales monitor"]]
        [:li [:a {:href "/tpo-locales"} "torproject.org locales monitor"]]
        [:li [:a {:href "/support-locales"} "Support Portal locales monitor"]]
+       [:li [:a {:href "/community-locales"} "Community Portal locales monitor"]]
        [:li [:a {:href "/manual-locales"} "Tor Browser User Manual locales monitor"]]
        [:li [:a {:href "https://arthuredelstein.net/exits"} "Tor Exit DNS Timeouts"]]]]
      [:h3 "Tor Browser Uplift Tracker"]
