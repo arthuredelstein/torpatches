@@ -81,18 +81,5 @@
     (println "Wrote index.")
     (write-index  "../../torpat.ch/short" short-branch uplift-table-short)
     (println "Wrote short.")
-    (translations/write-tbb-locale-page (translations/tbb-locale-data))
-    (println "Wrote TBB locales page.")
-    (translations/write-web-portal-locale-page
-     {:path "../../torpat.ch/support-locales"
-      :name "Tor Support Portal"
-      :stats (transifex/statistics "tor-project-support-community-portal" "support-portal")})
-    (translations/write-web-portal-locale-page
-     {:path "../../torpat.ch/manual-locales"
-      :name "Tor Browser User Manual"
-      :stats (transifex/statistics "tor-project-support-community-portal" "tbmanual-contentspot")})
-    (translations/write-web-portal-locale-page
-     {:path "../../torpat.ch/tpo-locales"
-      :name "torproject.org"
-      :stats (transifex/statistics "tor-project-support-community-portal" "tpo-contentspot")})
-    (println "Wrote portal locales pages.")))
+    (translations/write-translations-pages)
+    ))

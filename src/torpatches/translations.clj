@@ -273,3 +273,32 @@
        [:p.label "Translation progress (all locales):"]
        (web-portal-table all)
        (html/footer)]))))
+
+(defn write-translations-pages
+  []
+  (let [tbb-data (tbb-locale-data)
+        support-stats (transifex/statistics "tor-project-support-community-portal" "support-portal")
+        manual-stats (transifex/statistics "tor-project-support-community-portal" "tbmanual-contentspot")
+        tpo-stats (transifex/statistics "tor-project-support-community-portal" "tpo-contentspot")
+        community-stats (transifex/statistics "tor-project-support-community-portal" "communitytpo-contentspot")
+        ]
+    (write-tbb-locale-page (tbb-locale-data))
+    (println "Wrote TBB locales page.")
+    (write-web-portal-locale-page
+     {:path "../../torpat.ch/support-locales"
+      :name "Tor Support Portal"
+      :stats support-stats})
+    (write-web-portal-locale-page
+     {:path "../../torpat.ch/manual-locales"
+      :name "Tor Browser User Manual"
+      :stats manual-stats})
+    (write-web-portal-locale-page
+     {:path "../../torpat.ch/tpo-locales"
+      :name "torproject.org"
+      :stats tpo-stats})
+    (println "Wrote portal locales pages.")
+    (write-web-portal-locale-page
+     {:path "../../torpat.ch/community-locales"
+      :name "community.torproject.org"
+      :stats community-stats})
+    ))
