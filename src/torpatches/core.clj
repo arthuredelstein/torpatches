@@ -45,16 +45,21 @@
        [:li [:a {:href "https://wiki.mozilla.org/Security/FirstPartyIsolation"} "Mozilla's first-party isolation uplift patch dashboard"]]
        [:li [:a {:href "https://wiki.mozilla.org/Security/Fingerprinting"} "Mozilla's fingerprinting uplift patch dashboard"]]
        [:li [:a {:href "https://wiki.mozilla.org/Security/Fusion"} "Mozilla's Fusion page"]]
-       [:li [:a {:href "/locales"} "Tor Browser locales monitor"]]
-       [:li [:a {:href "/tpo-locales"} "torproject.org locales monitor"]]
-       [:li [:a {:href "/support-locales"} "Support Portal locales monitor"]]
-       [:li [:a {:href "/community-locales"} "Community Portal locales monitor"]]
-       [:li [:a {:href "/manual-locales"} "Tor Browser User Manual locales monitor"]]
-       [:li [:a {:href "https://arthuredelstein.net/exits"} "Tor Exit DNS Timeouts"]]]]
+       [:li "Locales monitoring"
+        [:ul
+         [:li [:a {:href "/locales"} "Tor Browser locales monitor"]]
+         [:li [:a {:href "/tpo-locales"} "torproject.org locales monitor"]]
+         [:li [:a {:href "/support-locales"} "Support Portal locales monitor"]]
+         [:li [:a {:href "/community-locales"} "Community Portal locales monitor"]]
+         [:li [:a {:href "/manual-locales"} "Tor Browser User Manual locales monitor"]]
+         [:li [:a {:href "/gettor-locales"} "GetTor locales monitor"]]
+         [:li [:a {:href "/snowflake-locales"} "Snowflake locales monitor"]]
+         ]]
+       [:li [:a {:href "https://arthuredelstein.net/exits"} "Tor Exit DNS Timeouts"]]]
      [:h3 "Tor Browser Uplift Tracker"]
      [:p "Current tor-browser.git branch: "
       [:a {:href (str "https://gitweb.torproject.org/tor-browser.git/log/?h="
-                      branch)} branch]]
+                      branch)} branch]]]
      legend-table
      uplift-table
      (html/footer)

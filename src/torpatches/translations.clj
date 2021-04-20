@@ -281,6 +281,8 @@
         manual-stats (transifex/statistics "tor-project-support-community-portal" "tbmanual-contentspot")
         tpo-stats (transifex/statistics "tor-project-support-community-portal" "tpo-contentspot")
         community-stats (transifex/statistics "tor-project-support-community-portal" "communitytpo-contentspot")
+        gettor-stats (transifex/statistics "tor-project-support-community-portal" "gettor-website-contentspot")
+        snowflake-stats (transifex/statistics "torproject" "snowflakeaddon-messagesjson")
         ]
     (write-tbb-locale-page (tbb-locale-data))
     (println "Wrote TBB locales page.")
@@ -301,4 +303,12 @@
      {:path "../../torpat.ch/community-locales"
       :name "community.torproject.org"
       :stats community-stats})
+    (write-web-portal-locale-page
+     {:path "../../torpat.ch/gettor-locales"
+      :name "gettor.torproject.org"
+      :stats gettor-stats})
+    (write-web-portal-locale-page
+     {:path "../../torpat.ch/snowflake-locales"
+      :name "Snowflake"
+      :stats snowflake-stats})
     ))
