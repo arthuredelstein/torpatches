@@ -47,14 +47,8 @@
        [:li [:a {:href "https://wiki.mozilla.org/Security/Fusion"} "Mozilla's Fusion page"]]
        [:li "Locales monitoring"
         [:ul
-         [:li [:a {:href "/locales"} "Tor Browser locales monitor"]]
-         [:li [:a {:href "/tpo-locales"} "torproject.org locales monitor"]]
-         [:li [:a {:href "/support-locales"} "Support Portal locales monitor"]]
-         [:li [:a {:href "/community-locales"} "Community Portal locales monitor"]]
-         [:li [:a {:href "/manual-locales"} "Tor Browser User Manual locales monitor"]]
-         [:li [:a {:href "/gettor-locales"} "GetTor locales monitor"]]
-         [:li [:a {:href "/snowflake-locales"} "Snowflake locales monitor"]]
-         ]]
+         (for [{:keys [name resource]} translations/other-resources]
+           [:li [:a {:href (str "/" resource)} (str name " locales monitor")]])]]
        [:li [:a {:href "https://arthuredelstein.net/exits"} "Tor Exit DNS Timeouts"]]]
      [:h3 "Tor Browser Uplift Tracker"]
      [:p "Current tor-browser.git branch: "

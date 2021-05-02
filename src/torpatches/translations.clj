@@ -273,21 +273,6 @@
        (web-portal-table all)
        (html/footer)]))))
 
-(defn write-individual-locale-pages [path data]
-  (utils/mkdirs path)
-  (let [locales ["en-US" "ru" "es"]]
-    (doseq [locale locales]
-      (spit
-       (str path locale)
-       (page/html5
-        (html/head
-         (str "torpat.ch: Tor Project Localization: " locale) "locale.css")
-        [:body
-         [:h1 (str "Tor Project Localization: " locale)]
-         [:p.label "blah"]
-         (html/footer)]
-        )))))
-
 (defn collect-individual-local-data
   [])
 
@@ -296,36 +281,57 @@
   [
    {:name"Tor Support Portal"
     :project "tor-project-support-community-portal"
-    :resource "support-portal"
-    :path "support-locales"}
+    :resource "support-portal"}
    {:name "Tor Browser User Manual"
     :project "tor-project-support-community-portal"
-    :resource "tbmanual-contentspot"
-    :path "manual-locales"}
+    :resource "tbmanual-contentspot"}
    {:name "torproject.org"
     :project "tor-project-support-community-portal"
-    :resource "tpo-web"
-    :path "tpo-locales"}
+    :resource "tpo-web"}
    {:name "community.torproject.org"
     :project "tor-project-support-community-portal"
-    :resource "communitytpo-contentspot"
-    :path "community-locales"}
+    :resource "communitytpo-contentspot"}
    {:name "gettor.torproject.org"
     :project "tor-project-support-community-portal"
-    :resource "gettor-website-contentspot"
-    :path "gettor-locales"}
+    :resource "gettor-website-contentspot"}
    {:name "Snowflake"
     :project "torproject"
-    :resource "snowflakeaddon-messagesjson"
-    :path "snowflake-locales"}
+    :resource "snowflakeaddon-messagesjson"}
   ])
 
 (defn attach-stats
-  "Takes a resource-map and attaches a :stats field."
+  "Takes a resource-map, pulls down stats data for the resource,
+  and attaches a :stats field."
   [resource-map]
   (assoc resource-map
          :stats (let [{:keys [project resource]} resource-map]
                   (transifex/statistics project resource))))
+
+
+(def locale-path "../../torpat.ch/locale/")
+
+(defn write-locale-page [locale data]
+  (let [locale-code (name locale)]
+    (spit
+     (str locale-path locale-code)
+   (page/html5
+    (html/head
+     (str "torpat.ch: Tor Project Localization: " locale-code) "locale.css")
+    [:body
+     [:h1 (str "Tor Project Localization: " locale-code)]
+     [:p.label data]
+     (html/footer)]
+    ))))
+
+(defn write-locale-pages
+  [tbb-data other-stats]
+  (utils/mkdirs locale-path)
+  (let [locales (-> (mapcat #(-> % :stats keys) other-stats) set sort)]
+    (for [locale locales]
+      (let [locale-data
+            (for [{:keys [name resource stats]} other-stats]
+              (assoc (stats locale) :name name :resource resource))]
+        (write-locale-page locale locale-data)))))
 
 (defn write-translations-pages
   []
@@ -333,7 +339,7 @@
         other-stats (map attach-stats other-resources)]
     (write-tbb-locale-page tbb-data)
     (println "Wrote TBB locales page.")
-    (doseq [{:keys [name path resource stats]} other-stats]
+    (doseq [{:keys [name resource stats]} other-stats]
       (write-web-portal-locale-page
        {:path (str "../../torpat.ch/" resource)
         :name name
