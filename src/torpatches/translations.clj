@@ -11,7 +11,6 @@
    [torpatches.utils :as utils]
    ))
 
-
 (def tbb-locale-resources
   [
    "abouttor-homepage"
@@ -274,41 +273,69 @@
        (web-portal-table all)
        (html/footer)]))))
 
+(defn write-individual-locale-pages [path data]
+  (utils/mkdirs path)
+  (let [locales ["en-US" "ru" "es"]]
+    (doseq [locale locales]
+      (spit
+       (str path locale)
+       (page/html5
+        (html/head
+         (str "torpat.ch: Tor Project Localization: " locale) "locale.css")
+        [:body
+         [:h1 (str "Tor Project Localization: " locale)]
+         [:p.label "blah"]
+         (html/footer)]
+        )))))
+
+(defn collect-individual-local-data
+  [])
+
+(def other-resources
+  "Resources other than Tor Browser resources."
+  [
+   {:name"Tor Support Portal"
+    :project "tor-project-support-community-portal"
+    :resource "support-portal"
+    :path "support-locales"}
+   {:name "Tor Browser User Manual"
+    :project "tor-project-support-community-portal"
+    :resource "tbmanual-contentspot"
+    :path "manual-locales"}
+   {:name "torproject.org"
+    :project "tor-project-support-community-portal"
+    :resource "tpo-web"
+    :path "tpo-locales"}
+   {:name "community.torproject.org"
+    :project "tor-project-support-community-portal"
+    :resource "communitytpo-contentspot"
+    :path "community-locales"}
+   {:name "gettor.torproject.org"
+    :project "tor-project-support-community-portal"
+    :resource "gettor-website-contentspot"
+    :path "gettor-locales"}
+   {:name "Snowflake"
+    :project "torproject"
+    :resource "snowflakeaddon-messagesjson"
+    :path "snowflake-locales"}
+  ])
+
+(defn attach-stats
+  "Takes a resource-map and attaches a :stats field."
+  [resource-map]
+  (assoc resource-map
+         :stats (let [{:keys [project resource]} resource-map]
+                  (transifex/statistics project resource))))
+
 (defn write-translations-pages
   []
   (let [tbb-data (tbb-locale-data)
-        support-stats (transifex/statistics "tor-project-support-community-portal" "support-portal")
-        manual-stats (transifex/statistics "tor-project-support-community-portal" "tbmanual-contentspot")
-        tpo-stats (transifex/statistics "tor-project-support-community-portal" "tpo-web")
-        community-stats (transifex/statistics "tor-project-support-community-portal" "communitytpo-contentspot")
-        gettor-stats (transifex/statistics "tor-project-support-community-portal" "gettor-website-contentspot")
-        snowflake-stats (transifex/statistics "torproject" "snowflakeaddon-messagesjson")
-        ]
-    (write-tbb-locale-page (tbb-locale-data))
+        other-stats (map attach-stats other-resources)]
+    (write-tbb-locale-page tbb-data)
     (println "Wrote TBB locales page.")
-    (write-web-portal-locale-page
-     {:path "../../torpat.ch/support-locales"
-      :name "Tor Support Portal"
-      :stats support-stats})
-    (write-web-portal-locale-page
-     {:path "../../torpat.ch/manual-locales"
-      :name "Tor Browser User Manual"
-      :stats manual-stats})
-    (write-web-portal-locale-page
-     {:path "../../torpat.ch/tpo-locales"
-      :name "torproject.org"
-      :stats tpo-stats})
-    (println "Wrote portal locales pages.")
-    (write-web-portal-locale-page
-     {:path "../../torpat.ch/community-locales"
-      :name "community.torproject.org"
-      :stats community-stats})
-    (write-web-portal-locale-page
-     {:path "../../torpat.ch/gettor-locales"
-      :name "gettor.torproject.org"
-      :stats gettor-stats})
-    (write-web-portal-locale-page
-     {:path "../../torpat.ch/snowflake-locales"
-      :name "Snowflake"
-      :stats snowflake-stats})
-    ))
+    (doseq [{:keys [name path resource stats]} other-stats]
+      (write-web-portal-locale-page
+       {:path (str "../../torpat.ch/" resource)
+        :name name
+        :stats stats})
+      (println "Wrote" name "page."))))

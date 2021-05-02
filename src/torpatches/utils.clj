@@ -96,3 +96,8 @@
   [pred coll]
   [(filter pred coll)
    (remove pred coll)])
+
+(defn mkdirs
+  "Make a series of directories out of the path."
+  [path]
+  (.mkdirs (java.io.File. path)))
