@@ -279,7 +279,7 @@
   (let [tbb-data (tbb-locale-data)
         support-stats (transifex/statistics "tor-project-support-community-portal" "support-portal")
         manual-stats (transifex/statistics "tor-project-support-community-portal" "tbmanual-contentspot")
-        tpo-stats (transifex/statistics "tor-project-support-community-portal" "tpo-contentspot")
+        tpo-stats (transifex/statistics "tor-project-support-community-portal" "tpo-web")
         community-stats (transifex/statistics "tor-project-support-community-portal" "communitytpo-contentspot")
         gettor-stats (transifex/statistics "tor-project-support-community-portal" "gettor-website-contentspot")
         snowflake-stats (transifex/statistics "torproject" "snowflakeaddon-messagesjson")
