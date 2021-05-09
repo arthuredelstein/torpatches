@@ -47,6 +47,7 @@
        [:li [:a {:href "https://wiki.mozilla.org/Security/Fusion"} "Mozilla's Fusion page"]]
        [:li "Locales monitoring"
         [:ul
+         [:li [:a {:href "/locales"} "Tor Browser locales monitor"]]
          (for [{:keys [name resource]} translations/other-resources]
            [:li [:a {:href (str "/" resource)} (str name " locales monitor")]])]]
        [:li [:a {:href "https://arthuredelstein.net/exits"} "Tor Exit DNS Timeouts"]]]

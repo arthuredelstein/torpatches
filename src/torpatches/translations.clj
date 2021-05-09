@@ -273,21 +273,18 @@
        (web-portal-table all)
        (html/footer)]))))
 
-(defn collect-individual-local-data
-  [])
-
 (def other-resources
   "Resources other than Tor Browser resources."
   [
-   {:name"Tor Support Portal"
-    :project "tor-project-support-community-portal"
-    :resource "support-portal"}
-   {:name "Tor Browser User Manual"
-    :project "tor-project-support-community-portal"
-    :resource "tbmanual-contentspot"}
    {:name "torproject.org"
     :project "tor-project-support-community-portal"
     :resource "tpo-web"}
+   {:name "Tor Browser User Manual"
+    :project "tor-project-support-community-portal"
+    :resource "tbmanual-contentspot"}
+   {:name "Tor Support Portal"
+    :project "tor-project-support-community-portal"
+    :resource "support-portal"}
    {:name "community.torproject.org"
     :project "tor-project-support-community-portal"
     :resource "communitytpo-contentspot"}
@@ -310,6 +307,12 @@
 
 (def locale-path "../../torpat.ch/locale/")
 
+(defn locale-table [data]
+  (let [headers [:name :untranslated_words :translated_words :reviewed_percentage :last_update]]
+    (->> data
+         (utils/maps-to-table-rows headers)
+         (utils/table-rows-to-html headers "locale"))))
+
 (defn write-locale-page [locale data]
   (let [locale-code (name locale)]
     (spit
@@ -319,7 +322,7 @@
      (str "torpat.ch: Tor Project Localization: " locale-code) "locale.css")
     [:body
      [:h1 (str "Tor Project Localization: " locale-code)]
-     [:p.label data]
+     (locale-table data)
      (html/footer)]
     ))))
 
@@ -327,7 +330,7 @@
   [tbb-data other-stats]
   (utils/mkdirs locale-path)
   (let [locales (-> (mapcat #(-> % :stats keys) other-stats) set sort)]
-    (for [locale locales]
+    (doseq [locale locales]
       (let [locale-data
             (for [{:keys [name resource stats]} other-stats]
               (assoc (stats locale) :name name :resource resource))]
@@ -344,4 +347,6 @@
        {:path (str "../../torpat.ch/" resource)
         :name name
         :stats stats})
-      (println "Wrote" name "page."))))
+      (println "Wrote" name "page."))
+    (write-locale-pages tbb-data other-stats)
+    (println "Wrote per-locale pages.")))
