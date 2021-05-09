@@ -329,11 +329,16 @@
 (defn write-locale-pages
   [tbb-data other-stats]
   (utils/mkdirs locale-path)
-  (let [locales (-> (mapcat #(-> % :stats keys) other-stats) set sort)]
+  (let [tbb-stats (group-by #(-> % :locale keyword) (:progress tbb-data))
+        locales (-> (concat (keys tbb-stats)
+                            (mapcat #(-> % :stats keys) other-stats))
+                    set sort)]
     (doseq [locale locales]
       (let [locale-data
-            (for [{:keys [name resource stats]} other-stats]
-              (assoc (stats locale) :name name :resource resource))]
+            (cons
+             (assoc (-> tbb-stats locale first) :name "Tor Browser")
+             (for [{:keys [name resource stats]} other-stats]
+               (assoc (stats locale) :name name :resource resource)))]
         (write-locale-page locale locale-data)))))
 
 (defn write-translations-pages
